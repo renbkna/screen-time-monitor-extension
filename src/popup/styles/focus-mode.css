@@ -1,0 +1,181 @@
+/* Focus Mode Styles */
+
+.focus-mode-container {
+  padding: 1rem;
+}
+
+.focus-mode-container h2 {
+  margin: 0 0 1rem;
+  color: #2c3e50;
+  font-size: 1.25rem;
+}
+
+/* Focus Setup */
+.focus-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.focus-description {
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Duration Selection */
+.focus-duration {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.focus-duration label {
+  font-weight: 500;
+  color: #333;
+}
+
+.duration-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.custom-duration {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 100px;
+}
+
+.custom-duration.hidden {
+  display: none;
+}
+
+/* Site Lists */
+.site-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.site-lists h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.site-lists textarea {
+  width: 100%;
+  height: 80px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+/* Active Focus Mode */
+.focus-active {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.focus-timer {
+  text-align: center;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.time-remaining {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+}
+
+/* Focus Details */
+.focus-details {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.focus-details h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.blocked-list {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #666;
+}
+
+.blocked-list li {
+  margin-bottom: 0.25rem;
+}
+
+/* Buttons */
+.primary-btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.primary-btn:hover {
+  background-color: #2980b9;
+}
+
+.secondary-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.secondary-btn:hover {
+  background-color: #c0392b;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .focus-mode-container {
+    padding: 0.75rem;
+  }
+
+  .time-remaining {
+    font-size: 1.25rem;
+  }
+
+  .site-lists textarea {
+    height: 60px;
+  }
+}
