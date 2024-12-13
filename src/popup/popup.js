@@ -1,207 +1,183 @@
-// Utility functions
-const formatTime = (ms) => {
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
+import StatisticsManager from '../statistics/statistics-manager.js';
 
-  if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`;
+class PopupManager {
+  constructor() {
+    this.statsManager = new StatisticsManager();
+    this.currentTab = 'overview';
+    this.timeRange = 'day';
+    this.selectedDate = new Date().toISOString().split('T')[0];
+    this.initializeEventListeners();
   }
-  return `${minutes}m`;
-};
 
-const formatDomain = (domain) => {
-  return domain.replace(/^www\./, '');
-};
+  initializeEventListeners() {
+    // Tab navigation
+    document.getElementById('overviewTab').addEventListener('click', () => this.switchTab('overview'));
+    document.getElementById('statsTab').addEventListener('click', () => this.switchTab('stats'));
 
-const formatDate = (date) => {
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-
-  switch (date) {
-    case today:
-      return 'Today';
-    case yesterday:
-      return 'Yesterday';
-    default:
-      return new Date(date).toLocaleDateString();
-  }
-};
-
-// State management
-let currentDate = new Date().toISOString().split('T')[0];
-let updateInterval = null;
-let statsUpdateInterval = null;
-
-// UI loading state management
-const setLoading = (isLoading) => {
-  const elements = document.querySelectorAll('.loading-state');
-  elements.forEach(element => {
-    element.style.opacity = isLoading ? '0.5' : '1';
-  });
-};
-
-// Error handling
-const showError = (message) => {
-  const errorContainer = document.getElementById('errorContainer');
-  if (errorContainer) {
-    errorContainer.textContent = message;
-    errorContainer.style.display = 'block';
-    setTimeout(() => {
-      errorContainer.style.display = 'none';
-    }, 3000);
-  }
-};
-
-// UI update functions
-const updateDateDisplay = () => {
-  const dateElement = document.getElementById('currentDate');
-  dateElement.textContent = formatDate(currentDate);
-
-  // Update navigation buttons state
-  const nextDay = document.getElementById('nextDay');
-  const today = new Date().toISOString().split('T')[0];
-  nextDay.disabled = currentDate >= today;
-};
-
-const updateCurrentSite = async () => {
-  try {
-    const state = await chrome.runtime.sendMessage({ type: 'GET_CURRENT_STATE' });
-    const domainElement = document.getElementById('currentDomain');
-    const timeElement = document.getElementById('currentTime');
-
-    if (state.currentUrl) {
-      const domain = new URL(state.currentUrl).hostname;
-      domainElement.textContent = formatDomain(domain);
-      
-      if (!state.isIdle && state.startTime) {
-        const timeSpent = Date.now() - state.startTime;
-        timeElement.textContent = formatTime(timeSpent);
-      }
-    } else {
-      domainElement.textContent = 'Not active';
-      timeElement.textContent = '0m';
-    }
-  } catch (error) {
-    showError('Failed to update current site data');
-    console.error('Error updating current site:', error);
-  }
-};
-
-const updateDailyStats = async () => {
-  try {
-    setLoading(true);
-    const stats = await chrome.runtime.sendMessage({
-      type: 'GET_DAILY_STATS',
-      date: currentDate
+    // Time range selector
+    document.getElementById('timeRange').addEventListener('change', (e) => {
+      this.timeRange = e.target.value;
+      this.updateStatistics();
     });
 
-    // Update total time
-    const totalTime = Object.values(stats).reduce(
-      (sum, site) => sum + site.totalTime,
-      0
-    );
-    document.getElementById('totalTime').textContent = formatTime(totalTime);
+    // Date navigation
+    document.getElementById('prevDay').addEventListener('click', () => this.navigateDate(-1));
+    document.getElementById('nextDay').addEventListener('click', () => this.navigateDate(1));
 
-    // Update total sites visited
-    const totalSites = Object.keys(stats).length;
+    // Initial load
+    this.loadData();
+
+    // Update current site info periodically
+    this.updateCurrentSite();
+    setInterval(() => this.updateCurrentSite(), 1000);
+  }
+
+  async loadData() {
+    try {
+      const data = await this.fetchData();
+      this.updateOverview(data);
+      if (this.currentTab === 'stats') {
+        this.updateStatistics();
+      }
+    } catch (error) {
+      this.showError('Error loading data: ' + error.message);
+    }
+  }
+
+  async fetchData() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['dailyStats'], (result) => {
+        resolve(result || { dailyStats: {} });
+      });
+    });
+  }
+
+  switchTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.classList.remove('active');
+    });
+    document.getElementById(`${tab}Tab`).classList.add('active');
+
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    document.getElementById(`${tab}Content`).classList.add('active');
+
+    this.currentTab = tab;
+
+    // Load statistics if switching to stats tab
+    if (tab === 'stats') {
+      this.updateStatistics();
+    }
+  }
+
+  async updateCurrentSite() {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      if (tabs[0]) {
+        const url = new URL(tabs[0].url);
+        const domain = url.hostname;
+        document.getElementById('currentDomain').textContent = domain;
+
+        const data = await this.fetchData();
+        const todayStats = data.dailyStats[this.selectedDate] || {};
+        const siteStats = todayStats[domain] || { totalTime: 0 };
+
+        document.getElementById('currentTime').textContent = this.formatTime(siteStats.totalTime);
+      }
+    });
+  }
+
+  async updateOverview(data) {
+    const todayStats = data.dailyStats[this.selectedDate] || {};
+    
+    // Update total time
+    const totalTime = Object.values(todayStats)
+      .reduce((sum, site) => sum + (site.totalTime || 0), 0);
+    document.getElementById('totalTime').textContent = this.formatTime(totalTime);
+
+    // Update total sites
+    const totalSites = Object.keys(todayStats).length;
     document.getElementById('totalSites').textContent = totalSites;
 
     // Update top sites list
-    const topSites = Object.entries(stats)
-      .map(([domain, data]) => ({
-        domain,
-        ...data
-      }))
-      .sort((a, b) => b.totalTime - a.totalTime)
+    this.updateTopSites(todayStats);
+
+    // Update current date display
+    this.updateDateDisplay();
+  }
+
+  updateTopSites(todayStats) {
+    const topSitesList = document.getElementById('topSitesList');
+    const sites = Object.entries(todayStats)
+      .sort(([, a], [, b]) => (b.totalTime || 0) - (a.totalTime || 0))
       .slice(0, 5);
 
-    const topSitesList = document.getElementById('topSitesList');
-    if (topSites.length === 0) {
-      topSitesList.innerHTML = '<div class="no-data">No activity recorded</div>';
+    if (sites.length === 0) {
+      topSitesList.innerHTML = '<div class="no-data">No data available</div>';
+      return;
+    }
+
+    topSitesList.innerHTML = sites.map(([domain, stats]) => `
+      <div class="site-item">
+        <div class="site-info">
+          <div class="site-domain">${domain}</div>
+          <div class="site-time">${this.formatTime(stats.totalTime)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  updateDateDisplay() {
+    const date = new Date(this.selectedDate);
+    const today = new Date().toISOString().split('T')[0];
+    let displayText = '';
+
+    if (this.selectedDate === today) {
+      displayText = 'Today';
     } else {
-      topSitesList.innerHTML = topSites
-        .map(
-          site => `
-          <div class="site-item">
-            <div class="site-domain">${formatDomain(site.domain)}</div>
-            <div class="site-time">${formatTime(site.totalTime)}</div>
-          </div>
-        `
-        )
-        .join('');
+      displayText = date.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
     }
-  } catch (error) {
-    showError('Failed to update daily statistics');
-    console.error('Error updating daily stats:', error);
-  } finally {
-    setLoading(false);
+
+    document.getElementById('currentDate').textContent = displayText;
   }
-};
 
-// Event handlers
-const handleDateChange = async (direction) => {
-  const date = new Date(currentDate);
-  date.setDate(date.getDate() + direction);
-  
-  // Don't allow future dates
-  if (date > new Date()) return;
-  
-  currentDate = date.toISOString().split('T')[0];
-  updateDateDisplay();
-  await updateDailyStats();
-};
-
-// Initialize popup
-const initializePopup = async () => {
-  try {
-    // Add error container if not present
-    if (!document.getElementById('errorContainer')) {
-      const errorContainer = document.createElement('div');
-      errorContainer.id = 'errorContainer';
-      errorContainer.className = 'error-container';
-      document.body.insertBefore(errorContainer, document.body.firstChild);
-    }
-
-    // Add loading-state class to updatable elements
-    document.querySelectorAll('.stat-container, .sites-list')
-      .forEach(element => element.classList.add('loading-state'));
-
-    // Set up date navigation
-    document.getElementById('prevDay').addEventListener('click', () => handleDateChange(-1));
-    document.getElementById('nextDay').addEventListener('click', () => handleDateChange(1));
-
-    // Initial updates
-    updateDateDisplay();
-    await updateCurrentSite();
-    await updateDailyStats();
-
-    // Set up periodic updates
-    updateInterval = setInterval(updateCurrentSite, 1000);
+  navigateDate(offset) {
+    const date = new Date(this.selectedDate);
+    date.setDate(date.getDate() + offset);
     
-    // Update daily stats every minute if viewing today's data
-    statsUpdateInterval = setInterval(() => {
-      const today = new Date().toISOString().split('T')[0];
-      if (currentDate === today) {
-        updateDailyStats();
-      }
-    }, 60000);
+    // Don't allow navigating to future dates
+    if (date > new Date()) return;
 
-  } catch (error) {
-    showError('Failed to initialize popup');
-    console.error('Error initializing popup:', error);
+    this.selectedDate = date.toISOString().split('T')[0];
+    this.loadData();
   }
-};
 
-// Cleanup when popup closes
-window.addEventListener('unload', () => {
-  if (updateInterval) {
-    clearInterval(updateInterval);
-  }
-  if (statsUpdateInterval) {
-    clearInterval(statsUpdateInterval);
-  }
-});
+  showError(message) {
+    const errorContainer = document.getElementById('errorContainer');
+    errorContainer.textContent = message;
+    errorContainer.classList.add('visible');
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', initializePopup);
+    setTimeout(() => {
+      errorContainer.classList.remove('visible');
+    }, 5000);
+  }
+
+  formatTime(ms) {
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
+}
+
+// Initialize popup manager
+new PopupManager();
