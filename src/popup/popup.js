@@ -1,10 +1,12 @@
 import LimitSettingsPanel from './components/limits/LimitSettingsPanel.js';
+import TimeRemainingDisplay from './components/limits/TimeRemainingDisplay.js';
 import { getCurrentTab } from '../utils/browserUtils.js';
 
 class PopupManager {
   constructor() {
     this.currentTab = null;
     this.limitSettingsPanel = null;
+    this.timeRemainingDisplay = null;
     this.initialize();
   }
 
@@ -12,6 +14,15 @@ class PopupManager {
     await this.setupNavigation();
     await this.initializeComponents();
     await this.loadCurrentTabInfo();
+    this.setupMessageListeners();
+  }
+
+  setupMessageListeners() {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.action === 'limitUpdated') {
+        this.refreshTimeDisplay();
+      }
+    });
   }
 
   async setupNavigation() {
@@ -30,6 +41,14 @@ class PopupManager {
   }
 
   async initializeComponents() {
+    // Initialize time remaining display
+    this.timeRemainingDisplay = new TimeRemainingDisplay();
+    const dashboardContainer = document.querySelector('#dashboard-container');
+    dashboardContainer.insertBefore(
+      this.timeRemainingDisplay.getContainer(),
+      dashboardContainer.firstChild
+    );
+
     // Initialize limit settings panel
     this.limitSettingsPanel = new LimitSettingsPanel();
     const limitContainer = document.querySelector('#limits-container');
@@ -48,6 +67,7 @@ class PopupManager {
       if (this.currentTab) {
         // Update UI with current tab info
         this.updateCurrentSiteInfo(this.currentTab);
+        await this.refreshTimeDisplay();
       }
     } catch (error) {
       console.error('Error loading current tab info:', error);
@@ -68,6 +88,8 @@ class PopupManager {
     // Special handling for different tabs
     if (tabName === 'limits') {
       this.limitSettingsPanel.loadExistingLimits();
+    } else if (tabName === 'dashboard') {
+      this.refreshTimeDisplay();
     }
   }
 
@@ -93,6 +115,20 @@ class PopupManager {
           domainInput.value = domain;
         }
       });
+    }
+  }
+
+  async refreshTimeDisplay() {
+    if (this.currentTab && this.currentTab.url) {
+      const domain = new URL(this.currentTab.url).hostname;
+      chrome.runtime.sendMessage(
+        { action: 'getTimeRemaining', domain },
+        timeInfo => {
+          if (this.timeRemainingDisplay) {
+            this.timeRemainingDisplay.updateDisplay(timeInfo);
+          }
+        }
+      );
     }
   }
 }
