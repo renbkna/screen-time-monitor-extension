@@ -7,51 +7,48 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+  <div id="errorContainer" class="error-container"></div>
+  
   <div class="container">
     <header class="header">
       <h1>Screen Time Monitor</h1>
       <div class="date-selector">
-        <button id="prevDay" title="Previous day">&lt;</button>
-        <span id="currentDate">Today</span>
-        <button id="nextDay" title="Next day">&gt;</button>
+        <button id="prevDay" class="nav-button">&larr;</button>
+        <span id="currentDate" class="current-date">Today</span>
+        <button id="nextDay" class="nav-button">&rarr;</button>
       </div>
     </header>
 
     <main class="main-content">
-      <section class="current-site" id="currentSiteSection">
+      <section class="current-site">
         <h2>Current Site</h2>
-        <div class="stat-container">
-          <div class="domain">
-            <span class="active-indicator" id="activeIndicator"></span>
-            <span id="currentDomain">Not active</span>
-          </div>
-          <div class="time" id="currentTime">0m</div>
+        <div class="stat-container loading-state">
+          <div class="domain" id="currentDomain">Loading...</div>
+          <div class="time" id="currentTime">--</div>
         </div>
       </section>
 
-      <section class="daily-summary" id="dailySummarySection">
+      <section class="daily-summary">
         <h2>Daily Summary</h2>
-        <div class="stat-container">
+        <div class="stat-container loading-state">
           <div class="total-label">Total Time</div>
-          <div class="total-time" id="totalTime">0h 0m</div>
+          <div class="total-time" id="totalTime">--</div>
         </div>
-        <div class="stat-container">
+        <div class="stat-container loading-state">
           <div class="total-label">Sites Visited</div>
-          <div class="total-visits" id="totalSites">0</div>
+          <div class="total-visits" id="totalSites">--</div>
         </div>
-        <div class="error-message">Failed to load daily statistics</div>
       </section>
 
-      <section class="top-sites" id="topSitesSection">
-        <h2>Top Sites</h2>
-        <div id="topSitesList" class="sites-list">
-          <!-- Top sites will be inserted here -->
-          <div class="empty-state">No sites visited yet today</div>
+      <section class="top-sites">
+        <h2>Most Visited Sites</h2>
+        <div id="topSitesList" class="sites-list loading-state">
+          <div class="no-data">Loading...</div>
         </div>
-        <div class="error-message">Failed to load top sites</div>
       </section>
     </main>
   </div>
+
   <script src="popup.js" type="module"></script>
 </body>
 </html>
