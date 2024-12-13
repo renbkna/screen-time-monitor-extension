@@ -23,17 +23,11 @@ class PerformanceMonitor {
   }
 
   init() {
-    // Start memory monitoring
     this.startMemoryMonitoring();
-
-    // Monitor storage usage
     this.monitorStorage();
-
-    // Monitor event listeners
     this.monitorEventListeners();
   }
 
-  // Track operation timing
   async trackOperation(name, operation) {
     const start = performance.now();
     try {
@@ -65,7 +59,6 @@ class PerformanceMonitor {
     }
   }
 
-  // Memory monitoring
   startMemoryMonitoring() {
     const recordMemory = () => {
       if (performance.memory) {
@@ -76,25 +69,21 @@ class PerformanceMonitor {
           total: totalJSHeapSize
         });
 
-        // Keep only last hour of measurements
         const hourAgo = Date.now() - 3600000;
         this.metrics.memoryUsage = this.metrics.memoryUsage.filter(
           m => m.timestamp > hourAgo
         );
 
-        // Check for memory leaks
         if (usedJSHeapSize > this.thresholds.memoryUsage) {
           this.reportMemoryWarning(usedJSHeapSize);
         }
       }
     };
 
-    // Record memory usage every minute
     const intervalId = setInterval(recordMemory, 60000);
     this.metrics.intervals.add(intervalId);
   }
 
-  // Storage monitoring
   async monitorStorage() {
     const checkStorage = async () => {
       const { bytesInUse } = await chrome.storage.local.getBytesInUse();
@@ -104,12 +93,10 @@ class PerformanceMonitor {
       }
     };
 
-    // Check storage usage every 5 minutes
     const intervalId = setInterval(checkStorage, 300000);
     this.metrics.intervals.add(intervalId);
   }
 
-  // Event listener monitoring
   monitorEventListeners() {
     const addListener = EventTarget.prototype.addEventListener;
     const removeListener = EventTarget.prototype.removeEventListener;
@@ -135,28 +122,22 @@ class PerformanceMonitor {
     }.bind(this);
   }
 
-  // Reporting functions
   reportSlowOperation(name, duration) {
     console.warn(`Slow operation detected: ${name} took ${duration.toFixed(2)}ms`);
-    // Add your reporting logic here
   }
 
   reportMemoryWarning(usedMemory) {
     console.warn(`High memory usage: ${(usedMemory / 1024 / 1024).toFixed(2)}MB`);
-    // Add your reporting logic here
   }
 
   reportStorageWarning(bytesInUse) {
     console.warn(`High storage usage: ${(bytesInUse / 1024 / 1024).toFixed(2)}MB`);
-    // Add your reporting logic here
   }
 
   reportListenerWarning(target, count) {
     console.warn(`High listener count on ${target}: ${count} listeners`);
-    // Add your reporting logic here
   }
 
-  // Get performance metrics
   getMetrics() {
     return {
       operations: Object.fromEntries(this.metrics.operations),
@@ -166,27 +147,19 @@ class PerformanceMonitor {
     };
   }
 
-  // Cleanup
   destroy() {
-    // Clear all intervals
     this.metrics.intervals.forEach(id => clearInterval(id));
     this.metrics.intervals.clear();
-
-    // Clear all timeouts
     this.metrics.timeouts.forEach(id => clearTimeout(id));
     this.metrics.timeouts.clear();
-
-    // Reset metrics
     this.metrics.operations.clear();
     this.metrics.listeners = new WeakMap();
     this.metrics.memoryUsage = [];
   }
 }
 
-// Export singleton instance
 export const performanceMonitor = new PerformanceMonitor();
 
-// Utility functions
 export function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -214,7 +187,6 @@ export async function measureAsync(name, operation) {
   return performanceMonitor.trackOperation(name, operation);
 }
 
-// Add the missing batchProcess function
 export async function batchProcess(items, processFunction, batchSize = 5) {
   const batches = [];
   for (let i = 0; i < items.length; i += batchSize) {
