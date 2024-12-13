@@ -1,102 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Screen Time Monitor</title>
-  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="styles/popup.css">
+  <link rel="stylesheet" href="styles/limit-settings.css">
 </head>
 <body>
-  <div id="errorContainer" class="error-container"></div>
-  
-  <div class="container">
-    <header class="header">
+  <div class="popup-container">
+    <header class="popup-header">
       <h1>Screen Time Monitor</h1>
-      <div class="date-selector">
-        <button id="prevDay" class="nav-button">&larr;</button>
-        <span id="currentDate" class="current-date">Today</span>
-        <button id="nextDay" class="nav-button">&rarr;</button>
-      </div>
+      <nav class="nav-tabs"></nav>
     </header>
 
-    <nav class="tab-navigation">
-      <button id="overviewTab" class="tab-button active">Overview</button>
-      <button id="statsTab" class="tab-button">Statistics</button>
-    </nav>
-
-    <main class="main-content">
-      <!-- Overview Tab Content -->
-      <div id="overviewContent" class="tab-content active">
-        <section class="current-site">
-          <h2>Current Site</h2>
-          <div class="stat-container loading-state">
-            <div class="domain" id="currentDomain">Loading...</div>
-            <div class="time" id="currentTime">--</div>
-          </div>
-        </section>
-
-        <section class="daily-summary">
-          <h2>Daily Summary</h2>
-          <div class="stat-container loading-state">
-            <div class="total-label">Total Time</div>
-            <div class="total-time" id="totalTime">--</div>
-          </div>
-          <div class="stat-container loading-state">
-            <div class="total-label">Sites Visited</div>
-            <div class="total-visits" id="totalSites">--</div>
-          </div>
-        </section>
-
-        <section class="top-sites">
-          <h2>Most Visited Sites</h2>
-          <div id="topSitesList" class="sites-list loading-state">
-            <div class="no-data">Loading...</div>
-          </div>
-        </section>
+    <main class="popup-content">
+      <!-- Dashboard Tab -->
+      <div id="dashboard-container" class="tab-container">
+        <div id="current-site-info" class="info-card"></div>
+        <div id="daily-summary" class="info-card">
+          <h3>Today's Summary</h3>
+          <!-- Daily stats will be inserted here -->
+        </div>
       </div>
 
-      <!-- Statistics Tab Content -->
-      <div id="statsContent" class="tab-content">
-        <div class="chart-controls">
-          <select id="timeRange" class="time-range-select">
-            <option value="day">Today</option>
-            <option value="week">Past Week</option>
-            <option value="month">Past Month</option>
-            <option value="year">Past Year</option>
-          </select>
-        </div>
+      <!-- Limits Tab -->
+      <div id="limits-container" class="tab-container hidden">
+        <!-- LimitSettingsPanel will be inserted here -->
+      </div>
 
-        <section class="time-distribution">
-          <h2>Time Distribution</h2>
-          <div class="chart-container">
-            <canvas id="timeDistributionChart"></canvas>
-          </div>
-        </section>
-
-        <section class="daily-trend">
-          <h2>Daily Usage Trend</h2>
-          <div class="chart-container">
-            <canvas id="dailyTrendChart"></canvas>
-          </div>
-        </section>
-
-        <section class="category-distribution">
-          <h2>Category Distribution</h2>
-          <div class="chart-container">
-            <canvas id="categoryDistributionChart"></canvas>
-          </div>
-        </section>
-
-        <section class="insights">
-          <h2>Key Insights</h2>
-          <div id="insightsList" class="insights-list">
-            <div class="insight-item loading-state">Analyzing your browsing patterns...</div>
-          </div>
-        </section>
+      <!-- Settings Tab -->
+      <div id="settings-container" class="tab-container hidden">
+        <h2>Settings</h2>
+        <!-- Settings content will be added later -->
       </div>
     </main>
   </div>
 
-  <script src="popup.js" type="module"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

@@ -1,183 +1,103 @@
-import StatisticsManager from '../statistics/statistics-manager.js';
+import LimitSettingsPanel from './components/limits/LimitSettingsPanel.js';
+import { getCurrentTab } from '../utils/browserUtils.js';
 
 class PopupManager {
   constructor() {
-    this.statsManager = new StatisticsManager();
-    this.currentTab = 'overview';
-    this.timeRange = 'day';
-    this.selectedDate = new Date().toISOString().split('T')[0];
-    this.initializeEventListeners();
+    this.currentTab = null;
+    this.limitSettingsPanel = null;
+    this.initialize();
   }
 
-  initializeEventListeners() {
-    // Tab navigation
-    document.getElementById('overviewTab').addEventListener('click', () => this.switchTab('overview'));
-    document.getElementById('statsTab').addEventListener('click', () => this.switchTab('stats'));
+  async initialize() {
+    await this.setupNavigation();
+    await this.initializeComponents();
+    await this.loadCurrentTabInfo();
+  }
 
-    // Time range selector
-    document.getElementById('timeRange').addEventListener('change', (e) => {
-      this.timeRange = e.target.value;
-      this.updateStatistics();
+  async setupNavigation() {
+    const navContainer = document.querySelector('.nav-tabs');
+    navContainer.innerHTML = `
+      <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
+      <button class="nav-tab" data-tab="limits">Time Limits</button>
+      <button class="nav-tab" data-tab="settings">Settings</button>
+    `;
+
+    // Add click listeners to tabs
+    const tabs = navContainer.querySelectorAll('.nav-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
     });
-
-    // Date navigation
-    document.getElementById('prevDay').addEventListener('click', () => this.navigateDate(-1));
-    document.getElementById('nextDay').addEventListener('click', () => this.navigateDate(1));
-
-    // Initial load
-    this.loadData();
-
-    // Update current site info periodically
-    this.updateCurrentSite();
-    setInterval(() => this.updateCurrentSite(), 1000);
   }
 
-  async loadData() {
+  async initializeComponents() {
+    // Initialize limit settings panel
+    this.limitSettingsPanel = new LimitSettingsPanel();
+    const limitContainer = document.querySelector('#limits-container');
+    limitContainer.appendChild(this.limitSettingsPanel.getContainer());
+
+    // Hide all containers initially except dashboard
+    document.querySelectorAll('.tab-container').forEach(container => {
+      container.classList.add('hidden');
+    });
+    document.querySelector('#dashboard-container').classList.remove('hidden');
+  }
+
+  async loadCurrentTabInfo() {
     try {
-      const data = await this.fetchData();
-      this.updateOverview(data);
-      if (this.currentTab === 'stats') {
-        this.updateStatistics();
+      this.currentTab = await getCurrentTab();
+      if (this.currentTab) {
+        // Update UI with current tab info
+        this.updateCurrentSiteInfo(this.currentTab);
       }
     } catch (error) {
-      this.showError('Error loading data: ' + error.message);
+      console.error('Error loading current tab info:', error);
     }
   }
 
-  async fetchData() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['dailyStats'], (result) => {
-        resolve(result || { dailyStats: {} });
-      });
+  switchTab(tabName) {
+    // Update active tab button
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.tab === tabName);
     });
-  }
 
-  switchTab(tab) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-button').forEach(button => {
-      button.classList.remove('active');
+    // Show selected container, hide others
+    document.querySelectorAll('.tab-container').forEach(container => {
+      container.classList.toggle('hidden', container.id !== `${tabName}-container`);
     });
-    document.getElementById(`${tab}Tab`).classList.add('active');
 
-    // Update tab content
-    document.querySelectorAll('.tab-content').forEach(content => {
-      content.classList.remove('active');
-    });
-    document.getElementById(`${tab}Content`).classList.add('active');
-
-    this.currentTab = tab;
-
-    // Load statistics if switching to stats tab
-    if (tab === 'stats') {
-      this.updateStatistics();
+    // Special handling for different tabs
+    if (tabName === 'limits') {
+      this.limitSettingsPanel.loadExistingLimits();
     }
   }
 
-  async updateCurrentSite() {
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      if (tabs[0]) {
-        const url = new URL(tabs[0].url);
-        const domain = url.hostname;
-        document.getElementById('currentDomain').textContent = domain;
-
-        const data = await this.fetchData();
-        const todayStats = data.dailyStats[this.selectedDate] || {};
-        const siteStats = todayStats[domain] || { totalTime: 0 };
-
-        document.getElementById('currentTime').textContent = this.formatTime(siteStats.totalTime);
-      }
-    });
-  }
-
-  async updateOverview(data) {
-    const todayStats = data.dailyStats[this.selectedDate] || {};
+  updateCurrentSiteInfo(tab) {
+    const domain = new URL(tab.url).hostname;
+    const siteInfoContainer = document.querySelector('#current-site-info');
     
-    // Update total time
-    const totalTime = Object.values(todayStats)
-      .reduce((sum, site) => sum + (site.totalTime || 0), 0);
-    document.getElementById('totalTime').textContent = this.formatTime(totalTime);
+    if (siteInfoContainer) {
+      siteInfoContainer.innerHTML = `
+        <h3>Current Site</h3>
+        <p class="site-domain">${domain}</p>
+        <button id="quick-limit-btn" class="secondary-btn">Set Time Limit</button>
+      `;
 
-    // Update total sites
-    const totalSites = Object.keys(todayStats).length;
-    document.getElementById('totalSites').textContent = totalSites;
-
-    // Update top sites list
-    this.updateTopSites(todayStats);
-
-    // Update current date display
-    this.updateDateDisplay();
-  }
-
-  updateTopSites(todayStats) {
-    const topSitesList = document.getElementById('topSitesList');
-    const sites = Object.entries(todayStats)
-      .sort(([, a], [, b]) => (b.totalTime || 0) - (a.totalTime || 0))
-      .slice(0, 5);
-
-    if (sites.length === 0) {
-      topSitesList.innerHTML = '<div class="no-data">No data available</div>';
-      return;
-    }
-
-    topSitesList.innerHTML = sites.map(([domain, stats]) => `
-      <div class="site-item">
-        <div class="site-info">
-          <div class="site-domain">${domain}</div>
-          <div class="site-time">${this.formatTime(stats.totalTime)}</div>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  updateDateDisplay() {
-    const date = new Date(this.selectedDate);
-    const today = new Date().toISOString().split('T')[0];
-    let displayText = '';
-
-    if (this.selectedDate === today) {
-      displayText = 'Today';
-    } else {
-      displayText = date.toLocaleDateString(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
+      // Add quick limit button functionality
+      const quickLimitBtn = document.querySelector('#quick-limit-btn');
+      quickLimitBtn.addEventListener('click', () => {
+        this.switchTab('limits');
+        this.limitSettingsPanel.showLimitForm();
+        // Pre-fill the domain
+        const domainInput = document.querySelector('#domain-input');
+        if (domainInput) {
+          domainInput.value = domain;
+        }
       });
     }
-
-    document.getElementById('currentDate').textContent = displayText;
-  }
-
-  navigateDate(offset) {
-    const date = new Date(this.selectedDate);
-    date.setDate(date.getDate() + offset);
-    
-    // Don't allow navigating to future dates
-    if (date > new Date()) return;
-
-    this.selectedDate = date.toISOString().split('T')[0];
-    this.loadData();
-  }
-
-  showError(message) {
-    const errorContainer = document.getElementById('errorContainer');
-    errorContainer.textContent = message;
-    errorContainer.classList.add('visible');
-
-    setTimeout(() => {
-      errorContainer.classList.remove('visible');
-    }, 5000);
-  }
-
-  formatTime(ms) {
-    const hours = Math.floor(ms / 3600000);
-    const minutes = Math.floor((ms % 3600000) / 60000);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
   }
 }
 
-// Initialize popup manager
-new PopupManager();
+// Initialize popup when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  new PopupManager();
+});
