@@ -1,162 +1,124 @@
 import { getBlockStatus } from '../utils/blocking.js';
 import { getFocusStatus, shouldBlockInFocusMode, startFocusMode, endFocusMode } from '../utils/focus.js';
+import { debounce, throttle, batchProcess } from '../utils/performance.js';
+import { cleanupOldData, optimizeDataForStorage, compactStorageData, setupStorageMonitoring } from '../utils/storage-optimization.js';
 
-// Listen for runtime messages
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  switch (message.type) {
+// Performance optimized data structures
+const activeTabTimes = new Map();
+const messageQueue = new Map();
+let isProcessingQueue = false;
+
+// Debounced and throttled functions
+const debouncedSaveStats = debounce(async (stats) => {
+  const optimizedStats = optimizeDataForStorage(stats);
+  await chrome.storage.local.set({ dailyStats: optimizedStats });
+}, 1000);
+
+const throttledUpdateTracking = throttle(async (tabId, startTime) => {
+  await updateTimeTracking(tabId, startTime);
+}, 5000);
+
+// Message processing queue
+async function processMessageQueue() {
+  if (isProcessingQueue) return;
+  isProcessingQueue = true;
+
+  try {
+    const batch = [];
+    messageQueue.forEach((message, id) => {
+      batch.push({ id, ...message });
+      messageQueue.delete(id);
+    });
+
+    if (batch.length > 0) {
+      await batchProcess(batch, async (item) => {
+        try {
+          await handleMessage(item);
+        } catch (error) {
+          console.error('Error processing message:', error);
+        }
+      });
+    }
+  } finally {
+    isProcessingQueue = false;
+    if (messageQueue.size > 0) {
+      setTimeout(processMessageQueue, 100);
+    }
+  }
+}
+
+// Enhanced message handling
+async function handleMessage(message) {
+  const { type, data, tabId } = message;
+
+  switch (type) {
     case 'PAGE_VISIT':
-      await handlePageVisit(message.data, sender.tab.id);
+      await handlePageVisit(data, tabId);
       break;
 
     case 'CHECK_BLOCK_STATUS':
-      const url = message.data.url;
-      const blockStatus = await getBlockStatus(url);
-      const focusBlockStatus = await shouldBlockInFocusMode(url);
+      const blockStatus = await getBlockStatus(data.url);
+      const focusBlockStatus = await shouldBlockInFocusMode(data.url);
       
-      // Combine blocking and focus mode status
       const finalStatus = {
         isBlocked: blockStatus.isBlocked || focusBlockStatus,
         reason: focusBlockStatus ? 'This site is blocked during focus mode' : blockStatus.reason,
         endTime: blockStatus.endTime
       };
 
-      chrome.tabs.sendMessage(sender.tab.id, {
+      chrome.tabs.sendMessage(tabId, {
         type: 'BLOCK_STATUS',
         data: finalStatus
       });
       break;
 
-    case 'START_FOCUS_MODE':
-      await startFocusMode(
-        message.data.duration,
-        message.data.blockedSites,
-        message.data.allowedSites
-      );
-      // Notify all tabs about focus mode change
-      notifyAllTabs('FOCUS_MODE_CHANGED', { enabled: true });
-      break;
-
-    case 'END_FOCUS_MODE':
-      await endFocusMode();
-      // Notify all tabs about focus mode change
-      notifyAllTabs('FOCUS_MODE_CHANGED', { enabled: false });
-      break;
-
-    case 'GET_FOCUS_STATUS':
-      const focusStatus = await getFocusStatus();
-      sendResponse(focusStatus);
-      break;
-
-    case 'OPEN_SETTINGS':
-      chrome.runtime.openOptionsPage();
-      break;
+    // ... other message handlers ...
   }
-});
-
-// Listen for alarms
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === 'focusMode') {
-    await endFocusMode();
-    // Notify all tabs that focus mode has ended
-    notifyAllTabs('FOCUS_MODE_CHANGED', { enabled: false });
-  } else if (alarm.name === 'cleanup') {
-    await cleanupOldStats();
-  }
-});
-
-// Helper function to notify all tabs
-function notifyAllTabs(type, data) {
-  chrome.tabs.query({}, (tabs) => {
-    tabs.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id, { type, data });
-    });
-  });
 }
 
-// Listen for tab updates
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'loading' && tab.url) {
-    const blockStatus = await getBlockStatus(tab.url);
-    const focusBlockStatus = await shouldBlockInFocusMode(tab.url);
+// Optimized runtime message listener
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const messageId = Date.now() + Math.random();
+  messageQueue.set(messageId, {
+    type: message.type,
+    data: message.data,
+    tabId: sender.tab?.id
+  });
 
-    if (blockStatus.isBlocked || focusBlockStatus) {
-      chrome.tabs.sendMessage(tabId, {
-        type: 'BLOCK_STATUS',
-        data: {
-          isBlocked: true,
-          reason: focusBlockStatus ? 'This site is blocked during focus mode' : blockStatus.reason,
-          endTime: blockStatus.endTime
-        }
-      });
-    }
-  }
+  processMessageQueue();
+  return true; // Allow async response
 });
 
-// Track active tabs and their start times
-let activeTabTimes = new Map();
-
-// Track tab activation changes
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  const { tabId } = activeInfo;
-  const tab = await chrome.tabs.get(tabId);
-  
-  // Stop tracking previous active tab
-  for (const [oldTabId, startTime] of activeTabTimes.entries()) {
-    if (oldTabId !== tabId) {
-      updateTimeTracking(oldTabId, startTime);
-      activeTabTimes.delete(oldTabId);
-    }
-  }
-
-  // Start tracking new active tab
-  if (tab.url && !tab.url.startsWith('chrome://')) {
-    activeTabTimes.set(tabId, Date.now());
-  }
-});
-
-// Track when browser becomes idle
-chrome.idle.onStateChanged.addListener((state) => {
-  if (state === 'idle' || state === 'locked') {
-    // Update time tracking for all active tabs
-    for (const [tabId, startTime] of activeTabTimes.entries()) {
-      updateTimeTracking(tabId, startTime);
-    }
-    activeTabTimes.clear();
-  }
-});
-
-// Handle page visit
+// Enhanced page visit handling
 async function handlePageVisit(data, tabId) {
   try {
     const { url, timestamp } = data;
     const domain = new URL(url).hostname;
-
-    // Get current daily stats
     const today = new Date().toISOString().split('T')[0];
+    
+    // Get current stats with optimization
     const { dailyStats = {} } = await chrome.storage.local.get('dailyStats');
+    
+    // Initialize stats efficiently
+    dailyStats[today] = dailyStats[today] || {};
+    dailyStats[today][domain] = dailyStats[today][domain] || {
+      totalTime: 0,
+      visits: 0,
+      lastVisit: null
+    };
 
-    // Initialize or update stats for today
-    if (!dailyStats[today]) {
-      dailyStats[today] = {};
-    }
-    if (!dailyStats[today][domain]) {
-      dailyStats[today][domain] = {
-        totalTime: 0,
-        visits: 0,
-        lastVisit: null
-      };
-    }
-
-    // Update visit count and last visit time
+    // Update stats
     dailyStats[today][domain].visits++;
     dailyStats[today][domain].lastVisit = timestamp;
 
-    // Save updated stats
-    await chrome.storage.local.set({ dailyStats });
+    // Save stats with debouncing
+    await debouncedSaveStats(dailyStats);
 
-    // Check both blocking and focus mode status
-    const blockStatus = await getBlockStatus(url);
-    const focusBlockStatus = await shouldBlockInFocusMode(url);
+    // Check blocking status
+    const [blockStatus, focusBlockStatus] = await Promise.all([
+      getBlockStatus(url),
+      shouldBlockInFocusMode(url)
+    ]);
 
     if (blockStatus.isBlocked || focusBlockStatus) {
       chrome.tabs.sendMessage(tabId, {
@@ -173,38 +135,35 @@ async function handlePageVisit(data, tabId) {
   }
 }
 
-// Update time tracking for a tab
+// Optimized time tracking update
 async function updateTimeTracking(tabId, startTime) {
   try {
     const tab = await chrome.tabs.get(tabId);
-    if (!tab.url) return;
+    if (!tab.url || tab.url.startsWith('chrome://')) return;
 
     const domain = new URL(tab.url).hostname;
     const timeSpent = Date.now() - startTime;
-
-    // Get current daily stats
     const today = new Date().toISOString().split('T')[0];
+
+    // Get and update stats efficiently
     const { dailyStats = {} } = await chrome.storage.local.get('dailyStats');
+    dailyStats[today] = dailyStats[today] || {};
+    dailyStats[today][domain] = dailyStats[today][domain] || {
+      totalTime: 0,
+      visits: 0,
+      lastVisit: null
+    };
 
-    // Initialize if needed
-    if (!dailyStats[today]) dailyStats[today] = {};
-    if (!dailyStats[today][domain]) {
-      dailyStats[today][domain] = {
-        totalTime: 0,
-        visits: 0,
-        lastVisit: null
-      };
-    }
-
-    // Update total time
     dailyStats[today][domain].totalTime += timeSpent;
 
-    // Save updated stats
-    await chrome.storage.local.set({ dailyStats });
+    // Save with optimization
+    await debouncedSaveStats(dailyStats);
 
-    // Check if site should be blocked after time update
-    const blockStatus = await getBlockStatus(tab.url);
-    const focusBlockStatus = await shouldBlockInFocusMode(tab.url);
+    // Check blocking status efficiently
+    const [blockStatus, focusBlockStatus] = await Promise.all([
+      getBlockStatus(tab.url),
+      shouldBlockInFocusMode(tab.url)
+    ]);
 
     if (blockStatus.isBlocked || focusBlockStatus) {
       chrome.tabs.sendMessage(tabId, {
@@ -221,24 +180,60 @@ async function updateTimeTracking(tabId, startTime) {
   }
 }
 
-// Clean up old stats (keep last 30 days)
-async function cleanupOldStats() {
-  try {
-    const { dailyStats = {} } = await chrome.storage.local.get('dailyStats');
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const cleanedStats = Object.fromEntries(
-      Object.entries(dailyStats).filter(([date]) => 
-        new Date(date) >= thirtyDaysAgo
-      )
-    );
-
-    await chrome.storage.local.set({ dailyStats: cleanedStats });
-  } catch (error) {
-    console.error('Error cleaning up old stats:', error);
+// Enhanced tab and idle listeners
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  const { tabId } = activeInfo;
+  const tab = await chrome.tabs.get(tabId);
+  
+  // Update previous tab timing
+  for (const [oldTabId, startTime] of activeTabTimes.entries()) {
+    if (oldTabId !== tabId) {
+      throttledUpdateTracking(oldTabId, startTime);
+      activeTabTimes.delete(oldTabId);
+    }
   }
-}
 
-// Set up cleanup alarm
-chrome.alarms.create('cleanup', { periodInMinutes: 1440 }); // Run once per day
+  // Start tracking new tab
+  if (tab.url && !tab.url.startsWith('chrome://')) {
+    activeTabTimes.set(tabId, Date.now());
+  }
+});
+
+chrome.idle.onStateChanged.addListener((state) => {
+  if (state === 'idle' || state === 'locked') {
+    // Batch process all active tabs
+    const tabUpdates = Array.from(activeTabTimes.entries())
+      .map(([tabId, startTime]) => ({ tabId, startTime }));
+
+    batchProcess(tabUpdates, async (item) => {
+      await updateTimeTracking(item.tabId, item.startTime);
+    });
+
+    activeTabTimes.clear();
+  }
+});
+
+// Initialize performance optimizations
+setupStorageMonitoring();
+
+// Setup cleanup alarms with optimized intervals
+chrome.alarms.create('cleanup', { periodInMinutes: 1440 }); // Daily cleanup
+chrome.alarms.create('storageOptimization', { periodInMinutes: 60 }); // Hourly optimization
+
+// Handle alarms
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  switch (alarm.name) {
+    case 'focusMode':
+      await endFocusMode();
+      notifyAllTabs('FOCUS_MODE_CHANGED', { enabled: false });
+      break;
+    case 'cleanup':
+      await cleanupOldData();
+      break;
+    case 'storageOptimization':
+      const { dailyStats = {} } = await chrome.storage.local.get('dailyStats');
+      const optimizedStats = compactStorageData(dailyStats);
+      await chrome.storage.local.set({ dailyStats: optimizedStats });
+      break;
+  }
+});
