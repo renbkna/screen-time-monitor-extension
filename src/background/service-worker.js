@@ -1,21 +1,50 @@
 import { getBlockStatus } from '../utils/blocking.js';
-
-// Track active tabs and their start times
-let activeTabTimes = new Map();
+import { getFocusStatus, shouldBlockInFocusMode, startFocusMode, endFocusMode } from '../utils/focus.js';
 
 // Listen for runtime messages
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   switch (message.type) {
     case 'PAGE_VISIT':
-      handlePageVisit(message.data, sender.tab.id);
+      await handlePageVisit(message.data, sender.tab.id);
       break;
 
     case 'CHECK_BLOCK_STATUS':
-      const blockStatus = await getBlockStatus(message.data.url);
+      const url = message.data.url;
+      const blockStatus = await getBlockStatus(url);
+      const focusBlockStatus = await shouldBlockInFocusMode(url);
+      
+      // Combine blocking and focus mode status
+      const finalStatus = {
+        isBlocked: blockStatus.isBlocked || focusBlockStatus,
+        reason: focusBlockStatus ? 'This site is blocked during focus mode' : blockStatus.reason,
+        endTime: blockStatus.endTime
+      };
+
       chrome.tabs.sendMessage(sender.tab.id, {
         type: 'BLOCK_STATUS',
-        data: blockStatus
+        data: finalStatus
       });
+      break;
+
+    case 'START_FOCUS_MODE':
+      await startFocusMode(
+        message.data.duration,
+        message.data.blockedSites,
+        message.data.allowedSites
+      );
+      // Notify all tabs about focus mode change
+      notifyAllTabs('FOCUS_MODE_CHANGED', { enabled: true });
+      break;
+
+    case 'END_FOCUS_MODE':
+      await endFocusMode();
+      // Notify all tabs about focus mode change
+      notifyAllTabs('FOCUS_MODE_CHANGED', { enabled: false });
+      break;
+
+    case 'GET_FOCUS_STATUS':
+      const focusStatus = await getFocusStatus();
+      sendResponse(focusStatus);
       break;
 
     case 'OPEN_SETTINGS':
@@ -24,18 +53,47 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
+// Listen for alarms
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'focusMode') {
+    await endFocusMode();
+    // Notify all tabs that focus mode has ended
+    notifyAllTabs('FOCUS_MODE_CHANGED', { enabled: false });
+  } else if (alarm.name === 'cleanup') {
+    await cleanupOldStats();
+  }
+});
+
+// Helper function to notify all tabs
+function notifyAllTabs(type, data) {
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id, { type, data });
+    });
+  });
+}
+
 // Listen for tab updates
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'loading' && tab.url) {
     const blockStatus = await getBlockStatus(tab.url);
-    if (blockStatus.isBlocked) {
+    const focusBlockStatus = await shouldBlockInFocusMode(tab.url);
+
+    if (blockStatus.isBlocked || focusBlockStatus) {
       chrome.tabs.sendMessage(tabId, {
         type: 'BLOCK_STATUS',
-        data: blockStatus
+        data: {
+          isBlocked: true,
+          reason: focusBlockStatus ? 'This site is blocked during focus mode' : blockStatus.reason,
+          endTime: blockStatus.endTime
+        }
       });
     }
   }
 });
+
+// Track active tabs and their start times
+let activeTabTimes = new Map();
 
 // Track tab activation changes
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
@@ -96,10 +154,19 @@ async function handlePageVisit(data, tabId) {
     // Save updated stats
     await chrome.storage.local.set({ dailyStats });
 
-    // Start tracking time for this tab if it's active
-    const activeTabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (activeTabs[0]?.id === tabId) {
-      activeTabTimes.set(tabId, timestamp);
+    // Check both blocking and focus mode status
+    const blockStatus = await getBlockStatus(url);
+    const focusBlockStatus = await shouldBlockInFocusMode(url);
+
+    if (blockStatus.isBlocked || focusBlockStatus) {
+      chrome.tabs.sendMessage(tabId, {
+        type: 'BLOCK_STATUS',
+        data: {
+          isBlocked: true,
+          reason: focusBlockStatus ? 'This site is blocked during focus mode' : blockStatus.reason,
+          endTime: blockStatus.endTime
+        }
+      });
     }
   } catch (error) {
     console.error('Error handling page visit:', error);
@@ -137,10 +204,16 @@ async function updateTimeTracking(tabId, startTime) {
 
     // Check if site should be blocked after time update
     const blockStatus = await getBlockStatus(tab.url);
-    if (blockStatus.isBlocked) {
+    const focusBlockStatus = await shouldBlockInFocusMode(tab.url);
+
+    if (blockStatus.isBlocked || focusBlockStatus) {
       chrome.tabs.sendMessage(tabId, {
         type: 'BLOCK_STATUS',
-        data: blockStatus
+        data: {
+          isBlocked: true,
+          reason: focusBlockStatus ? 'This site is blocked during focus mode' : blockStatus.reason,
+          endTime: blockStatus.endTime
+        }
       });
     }
   } catch (error) {
@@ -169,10 +242,3 @@ async function cleanupOldStats() {
 
 // Set up cleanup alarm
 chrome.alarms.create('cleanup', { periodInMinutes: 1440 }); // Run once per day
-
-// Listen for cleanup alarm
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'cleanup') {
-    cleanupOldStats();
-  }
-});
