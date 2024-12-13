@@ -1,6 +1,4 @@
-// Constants
-const IDLE_TIMEOUT_SECONDS = 60; // Consider user idle after 1 minute of inactivity
-const UPDATE_INTERVAL_SECONDS = 1;
+import { storageManager } from '../utils/storage-manager.js';
 
 // State
 let currentState = {
@@ -12,12 +10,20 @@ let currentState = {
 
 // Initialize tracking system
 const initializeTracking = async () => {
+  // Get settings
+  const settings = await storageManager.getSettings();
+  
   // Set up idle detection
-  chrome.idle.setDetectionInterval(IDLE_TIMEOUT_SECONDS);
+  chrome.idle.setDetectionInterval(settings.idleTimeout);
   
   // Start periodic updates
   chrome.alarms.create('updateTime', {
-    periodInMinutes: UPDATE_INTERVAL_SECONDS / 60
+    periodInMinutes: settings.updateInterval / 60
+  });
+
+  // Set up daily cleanup
+  chrome.alarms.create('cleanupStats', {
+    periodInMinutes: 24 * 60 // Run once per day
   });
 };
 
@@ -46,25 +52,10 @@ const updateTimeTracking = async () => {
   const today = new Date().toISOString().split('T')[0];
   
   // Update storage with time spent
-  const data = await chrome.storage.local.get('dailyStats');
-  const dailyStats = data.dailyStats || {};
+  await storageManager.updateDomainStats(today, domain, timeSpent);
   
-  if (!dailyStats[today]) {
-    dailyStats[today] = {};
-  }
-  
-  if (!dailyStats[today][domain]) {
-    dailyStats[today][domain] = {
-      totalTime: 0,
-      visits: 0,
-      lastVisit: now
-    };
-  }
-
-  dailyStats[today][domain].totalTime += timeSpent;
-  currentState.startTime = now; // Reset start time for next update
-
-  await chrome.storage.local.set({ dailyStats });
+  // Reset start time for next update
+  currentState.startTime = now;
 };
 
 // Handle active tab change
@@ -85,32 +76,16 @@ const handleTabChange = async (tabId, url) => {
   const domain = getDomain(url);
   if (domain) {
     const today = new Date().toISOString().split('T')[0];
-    const data = await chrome.storage.local.get('dailyStats');
-    const dailyStats = data.dailyStats || {};
-    
-    if (!dailyStats[today]) {
-      dailyStats[today] = {};
-    }
-    
-    if (!dailyStats[today][domain]) {
-      dailyStats[today][domain] = {
-        totalTime: 0,
-        visits: 0,
-        lastVisit: Date.now()
-      };
-    }
-
-    dailyStats[today][domain].visits += 1;
-    dailyStats[today][domain].lastVisit = Date.now();
-
-    await chrome.storage.local.set({ dailyStats });
+    await storageManager.updateDomainStats(today, domain, 0);
   }
 };
 
 // Event Listeners
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   const tab = await chrome.tabs.get(activeInfo.tabId);
-  handleTabChange(activeInfo.tabId, tab.url);
+  if (tab.url) {
+    handleTabChange(activeInfo.tabId, tab.url);
+  }
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
@@ -131,22 +106,38 @@ chrome.idle.onStateChanged.addListener((newState) => {
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === 'updateTime') {
-    await updateTimeTracking();
+  switch (alarm.name) {
+    case 'updateTime':
+      await updateTimeTracking();
+      break;
+    case 'cleanupStats':
+      await storageManager.clearOldStats();
+      break;
+  }
+});
+
+// Listen for messages from popup or content scripts
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  switch (message.type) {
+    case 'GET_CURRENT_STATE':
+      sendResponse({
+        currentUrl: currentState.activeUrl,
+        isIdle: currentState.isIdle,
+        startTime: currentState.startTime
+      });
+      return true;
+
+    case 'GET_DAILY_STATS':
+      storageManager.getDayStats(message.date)
+        .then(stats => sendResponse(stats));
+      return true;
+
+    case 'GET_STATS_SUMMARY':
+      storageManager.getStatsSummary(message.startDate, message.endDate)
+        .then(summary => sendResponse(summary));
+      return true;
   }
 });
 
 // Initialize when service worker starts
 initializeTracking().catch(console.error);
-
-// Listen for messages from popup or content scripts
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'GET_CURRENT_STATE') {
-    sendResponse({
-      currentUrl: currentState.activeUrl,
-      isIdle: currentState.isIdle,
-      startTime: currentState.startTime
-    });
-    return true;
-  }
-});
