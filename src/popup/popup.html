@@ -1,51 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Screen Time Monitor</title>
-  <link rel="stylesheet" href="styles/popup.css">
-  <link rel="stylesheet" href="styles/limit-settings.css">
-  <link rel="stylesheet" href="styles/blocking-settings.css">
-  <link rel="stylesheet" href="styles/focus-mode.css">
+  <link rel="stylesheet" href="../styles/popup.css">
+  <link rel="stylesheet" href="../styles/focus-stats.css">
 </head>
 <body>
   <div class="popup-container">
-    <header class="popup-header">
-      <h1>Screen Time Monitor</h1>
-      <nav class="nav-tabs"></nav>
-    </header>
+    <nav class="tab-navigation">
+      <button class="tab-button active" data-tab="overview">Overview</button>
+      <button class="tab-button" data-tab="focus">Focus</button>
+      <button class="tab-button" data-tab="limits">Limits</button>
+      <button class="tab-button" data-tab="settings">Settings</button>
+    </nav>
 
-    <main class="popup-content">
-      <!-- Dashboard Tab -->
-      <div id="dashboard-container" class="tab-container">
-        <div id="current-site-info" class="info-card"></div>
-        <div id="daily-summary" class="info-card">
-          <h3>Today's Summary</h3>
-          <!-- Daily stats will be inserted here -->
-        </div>
-      </div>
-
-      <!-- Limits Tab -->
-      <div id="limits-container" class="tab-container hidden">
-        <!-- LimitSettingsPanel will be inserted here -->
-      </div>
-
-      <!-- Blocking Tab -->
-      <div id="blocking-container" class="tab-container hidden">
-        <!-- BlockingSettings will be inserted here -->
-      </div>
+    <main class="tab-content">
+      <!-- Overview Tab -->
+      <section id="overview" class="tab-panel active">
+        <div id="daily-overview"></div>
+        <div id="site-breakdown"></div>
+      </section>
 
       <!-- Focus Mode Tab -->
-      <div id="focus-container" class="tab-container hidden">
-        <!-- FocusMode will be inserted here -->
-      </div>
+      <section id="focus" class="tab-panel">
+        <div class="focus-mode-wrapper">
+          <div id="focus-mode-controls"></div>
+          <div id="focus-mode-stats" class="hidden"></div>
+        </div>
+      </section>
+
+      <!-- Limits Tab -->
+      <section id="limits" class="tab-panel">
+        <div id="limit-settings"></div>
+      </section>
 
       <!-- Settings Tab -->
-      <div id="settings-container" class="tab-container hidden">
-        <h2>Settings</h2>
-        <!-- Settings content will be added later -->
-      </div>
+      <section id="settings" class="tab-panel">
+        <div id="extension-settings"></div>
+      </section>
     </main>
   </div>
 
