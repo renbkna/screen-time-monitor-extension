@@ -40,10 +40,17 @@ h1 {
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .date-selector button:hover {
   background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.date-selector button:active {
+  background: #e8e8e8;
+  transform: translateY(1px);
 }
 
 /* Section styles */
@@ -53,6 +60,11 @@ section {
   padding: 16px;
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+section:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 h2 {
@@ -62,17 +74,66 @@ h2 {
   color: #666;
 }
 
+/* Loading state */
+.loading {
+  opacity: 0.6;
+  position: relative;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #ddd;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: loading-spinner 0.8s linear infinite;
+}
+
+@keyframes loading-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Stats container */
 .stat-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.stat-container:hover {
+  background-color: #f8f8f8;
 }
 
 .domain {
   font-weight: 500;
   color: #2c2c2c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #34c759;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.inactive {
+  background-color: #ddd;
 }
 
 .time {
@@ -91,24 +152,47 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px;
+  padding: 8px 12px;
   background: #f8f8f8;
-  border-radius: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
 
 .site-item:hover {
   background: #f0f0f0;
+  transform: translateX(2px);
 }
 
 .site-domain {
   font-size: 13px;
   color: #444;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .site-time {
   font-size: 13px;
   color: #666;
   font-weight: 500;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* Error state */
+.error-message {
+  color: #ff3b30;
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #fff5f5;
+  border-radius: 4px;
+  display: none;
+}
+
+.error .error-message {
+  display: block;
 }
 
 /* Utility classes */
@@ -120,4 +204,12 @@ h2 {
 .total-visits {
   font-weight: 600;
   color: #0066cc;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 16px;
+  color: #666;
+  font-size: 13px;
 }
