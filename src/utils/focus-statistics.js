@@ -117,7 +117,7 @@ export async function getFocusStats(range = 'all') {
   return stats;
 }
 
-// Get current streak information
+// Get streak information
 export async function getStreakInfo() {
   const { focusStats = {} } = await chrome.storage.local.get('focusStats');
   
