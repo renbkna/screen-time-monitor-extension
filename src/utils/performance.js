@@ -213,3 +213,21 @@ export function throttle(func, limit) {
 export async function measureAsync(name, operation) {
   return performanceMonitor.trackOperation(name, operation);
 }
+
+// Add the missing batchProcess function
+export async function batchProcess(items, processFunction, batchSize = 5) {
+  const batches = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
+
+  const results = [];
+  for (const batch of batches) {
+    const batchResults = await Promise.all(
+      batch.map(item => processFunction(item))
+    );
+    results.push(...batchResults);
+  }
+
+  return results;
+}
