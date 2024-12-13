@@ -6,14 +6,11 @@ const formatTime = (ms) => {
 
   if (hours > 0) {
     return `${hours}h ${minutes % 60}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m`;
   }
-  return `${seconds}s`;
+  return `${minutes}m`;
 };
 
 const formatDomain = (domain) => {
-  if (!domain) return 'Not active';
   return domain.replace(/^www\./, '');
 };
 
@@ -34,40 +31,44 @@ const formatDate = (date) => {
 // State management
 let currentDate = new Date().toISOString().split('T')[0];
 let updateInterval = null;
+let statsUpdateInterval = null;
+
+// UI loading state management
+const setLoading = (isLoading) => {
+  const elements = document.querySelectorAll('.loading-state');
+  elements.forEach(element => {
+    element.style.opacity = isLoading ? '0.5' : '1';
+  });
+};
+
+// Error handling
+const showError = (message) => {
+  const errorContainer = document.getElementById('errorContainer');
+  if (errorContainer) {
+    errorContainer.textContent = message;
+    errorContainer.style.display = 'block';
+    setTimeout(() => {
+      errorContainer.style.display = 'none';
+    }, 3000);
+  }
+};
 
 // UI update functions
 const updateDateDisplay = () => {
   const dateElement = document.getElementById('currentDate');
   dateElement.textContent = formatDate(currentDate);
-};
 
-const setLoadingState = (elementId, isLoading) => {
-  const element = document.getElementById(elementId);
-  if (isLoading) {
-    element.classList.add('loading');
-  } else {
-    element.classList.remove('loading');
-  }
-};
-
-const setErrorState = (elementId, hasError) => {
-  const element = document.getElementById(elementId);
-  if (hasError) {
-    element.classList.add('error');
-  } else {
-    element.classList.remove('error');
-  }
+  // Update navigation buttons state
+  const nextDay = document.getElementById('nextDay');
+  const today = new Date().toISOString().split('T')[0];
+  nextDay.disabled = currentDate >= today;
 };
 
 const updateCurrentSite = async () => {
   try {
-    setLoadingState('currentSiteSection', true);
-    setErrorState('currentSiteSection', false);
-
     const state = await chrome.runtime.sendMessage({ type: 'GET_CURRENT_STATE' });
     const domainElement = document.getElementById('currentDomain');
     const timeElement = document.getElementById('currentTime');
-    const indicatorElement = document.getElementById('activeIndicator');
 
     if (state.currentUrl) {
       const domain = new URL(state.currentUrl).hostname;
@@ -76,31 +77,20 @@ const updateCurrentSite = async () => {
       if (!state.isIdle && state.startTime) {
         const timeSpent = Date.now() - state.startTime;
         timeElement.textContent = formatTime(timeSpent);
-        indicatorElement.classList.remove('inactive');
-      } else {
-        timeElement.textContent = '0s';
-        indicatorElement.classList.add('inactive');
       }
     } else {
       domainElement.textContent = 'Not active';
-      timeElement.textContent = '0s';
-      indicatorElement.classList.add('inactive');
+      timeElement.textContent = '0m';
     }
   } catch (error) {
+    showError('Failed to update current site data');
     console.error('Error updating current site:', error);
-    setErrorState('currentSiteSection', true);
-  } finally {
-    setLoadingState('currentSiteSection', false);
   }
 };
 
 const updateDailyStats = async () => {
   try {
-    setLoadingState('dailySummarySection', true);
-    setLoadingState('topSitesSection', true);
-    setErrorState('dailySummarySection', false);
-    setErrorState('topSitesSection', false);
-
+    setLoading(true);
     const stats = await chrome.runtime.sendMessage({
       type: 'GET_DAILY_STATS',
       date: currentDate
@@ -127,9 +117,8 @@ const updateDailyStats = async () => {
       .slice(0, 5);
 
     const topSitesList = document.getElementById('topSitesList');
-    
     if (topSites.length === 0) {
-      topSitesList.innerHTML = '<div class="empty-state">No sites visited yet today</div>';
+      topSitesList.innerHTML = '<div class="no-data">No activity recorded</div>';
     } else {
       topSitesList.innerHTML = topSites
         .map(
@@ -143,12 +132,10 @@ const updateDailyStats = async () => {
         .join('');
     }
   } catch (error) {
+    showError('Failed to update daily statistics');
     console.error('Error updating daily stats:', error);
-    setErrorState('dailySummarySection', true);
-    setErrorState('topSitesSection', true);
   } finally {
-    setLoadingState('dailySummarySection', false);
-    setLoadingState('topSitesSection', false);
+    setLoading(false);
   }
 };
 
@@ -168,20 +155,40 @@ const handleDateChange = async (direction) => {
 // Initialize popup
 const initializePopup = async () => {
   try {
+    // Add error container if not present
+    if (!document.getElementById('errorContainer')) {
+      const errorContainer = document.createElement('div');
+      errorContainer.id = 'errorContainer';
+      errorContainer.className = 'error-container';
+      document.body.insertBefore(errorContainer, document.body.firstChild);
+    }
+
+    // Add loading-state class to updatable elements
+    document.querySelectorAll('.stat-container, .sites-list')
+      .forEach(element => element.classList.add('loading-state'));
+
     // Set up date navigation
     document.getElementById('prevDay').addEventListener('click', () => handleDateChange(-1));
     document.getElementById('nextDay').addEventListener('click', () => handleDateChange(1));
 
     // Initial updates
     updateDateDisplay();
-    await Promise.all([
-      updateCurrentSite(),
-      updateDailyStats()
-    ]);
+    await updateCurrentSite();
+    await updateDailyStats();
 
-    // Set up periodic updates for current site
+    // Set up periodic updates
     updateInterval = setInterval(updateCurrentSite, 1000);
+    
+    // Update daily stats every minute if viewing today's data
+    statsUpdateInterval = setInterval(() => {
+      const today = new Date().toISOString().split('T')[0];
+      if (currentDate === today) {
+        updateDailyStats();
+      }
+    }, 60000);
+
   } catch (error) {
+    showError('Failed to initialize popup');
     console.error('Error initializing popup:', error);
   }
 };
@@ -190,6 +197,9 @@ const initializePopup = async () => {
 window.addEventListener('unload', () => {
   if (updateInterval) {
     clearInterval(updateInterval);
+  }
+  if (statsUpdateInterval) {
+    clearInterval(statsUpdateInterval);
   }
 });
 
