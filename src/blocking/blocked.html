@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Site Blocked</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #e74c3c;
+            margin-bottom: 1rem;
+        }
+        .message {
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .reason {
+            margin-top: 1rem;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Site Blocked</h1>
+        <div class="message">
+            This site has been blocked according to your screen time settings.
+        </div>
+        <div class="timer" id="timer"></div>
+        <div class="reason" id="blockReason"></div>
+        <button id="settingsBtn">Open Settings</button>
+    </div>
+
+    <script>
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' });
+        });
+
+        // Get block details from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const reason = urlParams.get('reason');
+        const endTime = urlParams.get('endTime');
+
+        // Display block reason if provided
+        if (reason) {
+            document.getElementById('blockReason').textContent = reason;
+        }
+
+        // Update timer if end time is provided
+        if (endTime) {
+            function updateTimer() {
+                const now = new Date().getTime();
+                const end = new Date(parseInt(endTime)).getTime();
+                const distance = end - now;
+
+                if (distance <= 0) {
+                    document.getElementById('timer').textContent = 'Block period ended';
+                    // Notify background script to check if the block should be lifted
+                    chrome.runtime.sendMessage({ type: 'CHECK_BLOCK_STATUS' });
+                } else {
+                    const hours = Math.floor(distance / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    document.getElementById('timer').textContent = 
+                        `Time remaining: ${hours}h ${minutes}m`;
+                }
+            }
+
+            updateTimer();
+            setInterval(updateTimer, 60000); // Update every minute
+        }
+    </script>
+</body>
+</html>
