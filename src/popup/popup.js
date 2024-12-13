@@ -1,6 +1,7 @@
 import LimitSettingsPanel from './components/limits/LimitSettingsPanel.js';
 import TimeRemainingDisplay from './components/limits/TimeRemainingDisplay.js';
 import BlockingSettings from './components/BlockingSettings.js';
+import FocusMode from './components/FocusMode.js';
 import { getCurrentTab } from '../utils/browserUtils.js';
 
 class PopupManager {
@@ -9,6 +10,7 @@ class PopupManager {
     this.limitSettingsPanel = null;
     this.timeRemainingDisplay = null;
     this.blockingSettings = null;
+    this.focusMode = null;
     this.initialize();
   }
 
@@ -21,10 +23,16 @@ class PopupManager {
 
   setupMessageListeners() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.action === 'limitUpdated') {
-        this.refreshTimeDisplay();
-      } else if (message.action === 'blockingUpdated') {
-        this.blockingSettings.loadBlockingRules();
+      switch (message.action) {
+        case 'limitUpdated':
+          this.refreshTimeDisplay();
+          break;
+        case 'blockingUpdated':
+          this.blockingSettings.loadBlockingRules();
+          break;
+        case 'focusModeUpdated':
+          this.focusMode.render();
+          break;
       }
     });
   }
@@ -35,6 +43,7 @@ class PopupManager {
       <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
       <button class="nav-tab" data-tab="limits">Time Limits</button>
       <button class="nav-tab" data-tab="blocking">Blocking</button>
+      <button class="nav-tab" data-tab="focus">Focus Mode</button>
       <button class="nav-tab" data-tab="settings">Settings</button>
     `;
 
@@ -64,6 +73,11 @@ class PopupManager {
       document.querySelector('#blocking-container')
     );
 
+    // Initialize focus mode
+    this.focusMode = new FocusMode(
+      document.querySelector('#focus-container')
+    );
+
     // Hide all containers initially except dashboard
     document.querySelectorAll('.tab-container').forEach(container => {
       container.classList.add('hidden');
@@ -75,8 +89,7 @@ class PopupManager {
     try {
       this.currentTab = await getCurrentTab();
       if (this.currentTab) {
-        // Update UI with current tab info
-        this.updateCurrentSiteInfo(this.currentTab);
+        await this.updateCurrentSiteInfo(this.currentTab);
         await this.refreshTimeDisplay();
       }
     } catch (error) {
@@ -96,16 +109,23 @@ class PopupManager {
     });
 
     // Special handling for different tabs
-    if (tabName === 'limits') {
-      this.limitSettingsPanel.loadExistingLimits();
-    } else if (tabName === 'dashboard') {
-      this.refreshTimeDisplay();
-    } else if (tabName === 'blocking') {
-      this.blockingSettings.loadBlockingRules();
+    switch (tabName) {
+      case 'limits':
+        this.limitSettingsPanel.loadExistingLimits();
+        break;
+      case 'dashboard':
+        this.refreshTimeDisplay();
+        break;
+      case 'blocking':
+        this.blockingSettings.loadBlockingRules();
+        break;
+      case 'focus':
+        this.focusMode.render();
+        break;
     }
   }
 
-  updateCurrentSiteInfo(tab) {
+  async updateCurrentSiteInfo(tab) {
     try {
       const domain = new URL(tab.url).hostname;
       const siteInfoContainer = document.querySelector('#current-site-info');
@@ -117,49 +137,66 @@ class PopupManager {
           <div class="quick-actions">
             <button id="quick-limit-btn" class="secondary-btn">Set Time Limit</button>
             <button id="quick-block-btn" class="secondary-btn">Block Site</button>
+            <button id="quick-focus-btn" class="secondary-btn">Start Focus Session</button>
           </div>
         `;
 
-        // Add quick limit button functionality
-        const quickLimitBtn = document.querySelector('#quick-limit-btn');
-        quickLimitBtn.addEventListener('click', () => {
-          this.switchTab('limits');
-          this.limitSettingsPanel.showLimitForm();
-          // Pre-fill the domain
-          const domainInput = document.querySelector('#domain-input');
-          if (domainInput) {
-            domainInput.value = domain;
-          }
-        });
-
-        // Add quick block button functionality
-        const quickBlockBtn = document.querySelector('#quick-block-btn');
-        quickBlockBtn.addEventListener('click', () => {
-          this.switchTab('blocking');
-          this.blockingSettings.addBlockedSite(domain);
-        });
+        this.setupQuickActionButtons(domain);
       }
     } catch (error) {
       console.error('Error updating current site info:', error);
     }
   }
 
+  setupQuickActionButtons(domain) {
+    // Quick limit button
+    const quickLimitBtn = document.querySelector('#quick-limit-btn');
+    quickLimitBtn?.addEventListener('click', () => {
+      this.switchTab('limits');
+      this.limitSettingsPanel.showLimitForm(domain);
+    });
+
+    // Quick block button
+    const quickBlockBtn = document.querySelector('#quick-block-btn');
+    quickBlockBtn?.addEventListener('click', () => {
+      this.switchTab('blocking');
+      this.blockingSettings.addBlockedSite(domain);
+    });
+
+    // Quick focus button
+    const quickFocusBtn = document.querySelector('#quick-focus-btn');
+    quickFocusBtn?.addEventListener('click', () => {
+      this.switchTab('focus');
+      const blockedSites = document.querySelector('#blockedSites');
+      if (blockedSites) {
+        blockedSites.value = domain;
+      }
+    });
+  }
+
   async refreshTimeDisplay() {
-    if (this.currentTab && this.currentTab.url) {
+    if (this.currentTab?.url) {
       const domain = new URL(this.currentTab.url).hostname;
       chrome.runtime.sendMessage(
         { action: 'getTimeRemaining', domain },
         timeInfo => {
-          if (this.timeRemainingDisplay) {
-            this.timeRemainingDisplay.updateDisplay(timeInfo);
-          }
+          this.timeRemainingDisplay?.updateDisplay(timeInfo);
         }
       );
     }
+  }
+
+  cleanup() {
+    this.focusMode?.stopUpdates();
   }
 }
 
 // Initialize popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  new PopupManager();
+  const popupManager = new PopupManager();
+
+  // Clean up when popup is closed
+  window.addEventListener('unload', () => {
+    popupManager.cleanup();
+  });
 });
