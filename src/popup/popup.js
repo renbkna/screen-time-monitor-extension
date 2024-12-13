@@ -6,11 +6,14 @@ const formatTime = (ms) => {
 
   if (hours > 0) {
     return `${hours}h ${minutes % 60}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m`;
   }
-  return `${minutes}m`;
+  return `${seconds}s`;
 };
 
 const formatDomain = (domain) => {
+  if (!domain) return 'Not active';
   return domain.replace(/^www\./, '');
 };
 
@@ -38,62 +41,115 @@ const updateDateDisplay = () => {
   dateElement.textContent = formatDate(currentDate);
 };
 
-const updateCurrentSite = async () => {
-  const state = await chrome.runtime.sendMessage({ type: 'GET_CURRENT_STATE' });
-  const domainElement = document.getElementById('currentDomain');
-  const timeElement = document.getElementById('currentTime');
-
-  if (state.currentUrl) {
-    const domain = new URL(state.currentUrl).hostname;
-    domainElement.textContent = formatDomain(domain);
-    
-    if (!state.isIdle && state.startTime) {
-      const timeSpent = Date.now() - state.startTime;
-      timeElement.textContent = formatTime(timeSpent);
-    }
+const setLoadingState = (elementId, isLoading) => {
+  const element = document.getElementById(elementId);
+  if (isLoading) {
+    element.classList.add('loading');
   } else {
-    domainElement.textContent = 'Not active';
-    timeElement.textContent = '0m';
+    element.classList.remove('loading');
+  }
+};
+
+const setErrorState = (elementId, hasError) => {
+  const element = document.getElementById(elementId);
+  if (hasError) {
+    element.classList.add('error');
+  } else {
+    element.classList.remove('error');
+  }
+};
+
+const updateCurrentSite = async () => {
+  try {
+    setLoadingState('currentSiteSection', true);
+    setErrorState('currentSiteSection', false);
+
+    const state = await chrome.runtime.sendMessage({ type: 'GET_CURRENT_STATE' });
+    const domainElement = document.getElementById('currentDomain');
+    const timeElement = document.getElementById('currentTime');
+    const indicatorElement = document.getElementById('activeIndicator');
+
+    if (state.currentUrl) {
+      const domain = new URL(state.currentUrl).hostname;
+      domainElement.textContent = formatDomain(domain);
+      
+      if (!state.isIdle && state.startTime) {
+        const timeSpent = Date.now() - state.startTime;
+        timeElement.textContent = formatTime(timeSpent);
+        indicatorElement.classList.remove('inactive');
+      } else {
+        timeElement.textContent = '0s';
+        indicatorElement.classList.add('inactive');
+      }
+    } else {
+      domainElement.textContent = 'Not active';
+      timeElement.textContent = '0s';
+      indicatorElement.classList.add('inactive');
+    }
+  } catch (error) {
+    console.error('Error updating current site:', error);
+    setErrorState('currentSiteSection', true);
+  } finally {
+    setLoadingState('currentSiteSection', false);
   }
 };
 
 const updateDailyStats = async () => {
-  const stats = await chrome.runtime.sendMessage({
-    type: 'GET_DAILY_STATS',
-    date: currentDate
-  });
+  try {
+    setLoadingState('dailySummarySection', true);
+    setLoadingState('topSitesSection', true);
+    setErrorState('dailySummarySection', false);
+    setErrorState('topSitesSection', false);
 
-  // Update total time
-  const totalTime = Object.values(stats).reduce(
-    (sum, site) => sum + site.totalTime,
-    0
-  );
-  document.getElementById('totalTime').textContent = formatTime(totalTime);
+    const stats = await chrome.runtime.sendMessage({
+      type: 'GET_DAILY_STATS',
+      date: currentDate
+    });
 
-  // Update total sites visited
-  const totalSites = Object.keys(stats).length;
-  document.getElementById('totalSites').textContent = totalSites;
+    // Update total time
+    const totalTime = Object.values(stats).reduce(
+      (sum, site) => sum + site.totalTime,
+      0
+    );
+    document.getElementById('totalTime').textContent = formatTime(totalTime);
 
-  // Update top sites list
-  const topSites = Object.entries(stats)
-    .map(([domain, data]) => ({
-      domain,
-      ...data
-    }))
-    .sort((a, b) => b.totalTime - a.totalTime)
-    .slice(0, 5);
+    // Update total sites visited
+    const totalSites = Object.keys(stats).length;
+    document.getElementById('totalSites').textContent = totalSites;
 
-  const topSitesList = document.getElementById('topSitesList');
-  topSitesList.innerHTML = topSites
-    .map(
-      site => `
-      <div class="site-item">
-        <div class="site-domain">${formatDomain(site.domain)}</div>
-        <div class="site-time">${formatTime(site.totalTime)}</div>
-      </div>
-    `
-    )
-    .join('');
+    // Update top sites list
+    const topSites = Object.entries(stats)
+      .map(([domain, data]) => ({
+        domain,
+        ...data
+      }))
+      .sort((a, b) => b.totalTime - a.totalTime)
+      .slice(0, 5);
+
+    const topSitesList = document.getElementById('topSitesList');
+    
+    if (topSites.length === 0) {
+      topSitesList.innerHTML = '<div class="empty-state">No sites visited yet today</div>';
+    } else {
+      topSitesList.innerHTML = topSites
+        .map(
+          site => `
+          <div class="site-item">
+            <div class="site-domain">${formatDomain(site.domain)}</div>
+            <div class="site-time">${formatTime(site.totalTime)}</div>
+          </div>
+        `
+        )
+        .join('');
+    }
+  } catch (error) {
+    console.error('Error updating daily stats:', error);
+    setErrorState('dailySummarySection', true);
+    setErrorState('topSitesSection', true);
+  } finally {
+    setLoadingState('dailySummarySection', false);
+    setLoadingState('topSitesSection', false);
+  }
 };
 
 // Event handlers
@@ -111,17 +167,23 @@ const handleDateChange = async (direction) => {
 
 // Initialize popup
 const initializePopup = async () => {
-  // Set up date navigation
-  document.getElementById('prevDay').addEventListener('click', () => handleDateChange(-1));
-  document.getElementById('nextDay').addEventListener('click', () => handleDateChange(1));
+  try {
+    // Set up date navigation
+    document.getElementById('prevDay').addEventListener('click', () => handleDateChange(-1));
+    document.getElementById('nextDay').addEventListener('click', () => handleDateChange(1));
 
-  // Initial updates
-  updateDateDisplay();
-  await updateCurrentSite();
-  await updateDailyStats();
+    // Initial updates
+    updateDateDisplay();
+    await Promise.all([
+      updateCurrentSite(),
+      updateDailyStats()
+    ]);
 
-  // Set up periodic updates for current site
-  updateInterval = setInterval(updateCurrentSite, 1000);
+    // Set up periodic updates for current site
+    updateInterval = setInterval(updateCurrentSite, 1000);
+  } catch (error) {
+    console.error('Error initializing popup:', error);
+  }
 };
 
 // Cleanup when popup closes
