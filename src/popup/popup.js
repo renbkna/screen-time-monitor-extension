@@ -3,36 +3,160 @@ import TimeRemainingDisplay from './components/limits/TimeRemainingDisplay.js';
 import BlockingSettings from './components/BlockingSettings.js';
 import FocusMode from './components/FocusMode.js';
 import { getCurrentTab } from '../utils/browserUtils.js';
+import { debounce, throttle } from '../utils/performance.js';
+import { initializeMemoryManagement, cleanupChart } from '../utils/memory-management.js';
+import {
+  createOptimizedChartOptions,
+  createDebouncedChartUpdate,
+  downsampleChartData,
+  optimizeChartForRealtime
+} from '../utils/chart-optimization.js';
 
 class PopupManager {
   constructor() {
     this.currentTab = null;
-    this.limitSettingsPanel = null;
-    this.timeRemainingDisplay = null;
-    this.blockingSettings = null;
-    this.focusMode = null;
+    this.components = new Map();
+    this.chartInstances = new Map();
     this.initialize();
   }
 
   async initialize() {
+    // Initialize memory management
+    initializeMemoryManagement();
+
+    // Setup debounced and throttled functions
+    this.debouncedRefresh = debounce(this.refreshTimeDisplay.bind(this), 1000);
+    this.throttledUpdate = throttle(this.updateCurrentSiteInfo.bind(this), 5000);
+
     await this.setupNavigation();
-    await this.initializeComponents();
-    await this.loadCurrentTabInfo();
     this.setupMessageListeners();
+    await this.loadCurrentTabInfo();
+
+    // Lazy load components when needed
+    this.setupLazyLoading();
   }
 
   setupMessageListeners() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       switch (message.action) {
         case 'limitUpdated':
-          this.refreshTimeDisplay();
+          this.debouncedRefresh();
           break;
         case 'blockingUpdated':
-          this.blockingSettings.loadBlockingRules();
+          if (this.components.has('blockingSettings')) {
+            this.components.get('blockingSettings').loadBlockingRules();
+          }
           break;
         case 'focusModeUpdated':
-          this.focusMode.render();
+          if (this.components.has('focusMode')) {
+            this.components.get('focusMode').render();
+          }
           break;
+        case 'chartDataUpdated':
+          this.updateCharts(message.data);
+          break;
+      }
+    });
+  }
+
+  setupLazyLoading() {
+    // Load components only when their tab is selected
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', async () => {
+        const tabName = tab.dataset.tab;
+        await this.loadComponentForTab(tabName);
+        this.switchTab(tabName);
+      });
+    });
+  }
+
+  async loadComponentForTab(tabName) {
+    if (this.components.has(tabName)) return;
+
+    try {
+      switch (tabName) {
+        case 'dashboard':
+          if (!this.components.has('timeRemainingDisplay')) {
+            const timeRemainingDisplay = new TimeRemainingDisplay();
+            this.components.set('timeRemainingDisplay', timeRemainingDisplay);
+            const dashboardContainer = document.querySelector('#dashboard-container');
+            dashboardContainer.insertBefore(
+              timeRemainingDisplay.getContainer(),
+              dashboardContainer.firstChild
+            );
+          }
+          break;
+
+        case 'limits':
+          if (!this.components.has('limitSettingsPanel')) {
+            const limitSettingsPanel = new LimitSettingsPanel();
+            this.components.set('limitSettingsPanel', limitSettingsPanel);
+            const limitContainer = document.querySelector('#limits-container');
+            limitContainer.appendChild(limitSettingsPanel.getContainer());
+            this.initializeCharts(limitContainer);
+          }
+          break;
+
+        case 'blocking':
+          if (!this.components.has('blockingSettings')) {
+            const blockingSettings = new BlockingSettings(
+              document.querySelector('#blocking-container')
+            );
+            this.components.set('blockingSettings', blockingSettings);
+          }
+          break;
+
+        case 'focus':
+          if (!this.components.has('focusMode')) {
+            const focusMode = new FocusMode(
+              document.querySelector('#focus-container')
+            );
+            this.components.set('focusMode', focusMode);
+          }
+          break;
+      }
+    } catch (error) {
+      console.error(`Error loading component for tab ${tabName}:`, error);
+    }
+  }
+
+  initializeCharts(container) {
+    const chartCanvases = container.querySelectorAll('canvas[data-chart]');
+    chartCanvases.forEach(canvas => {
+      const chartId = canvas.dataset.chart;
+      const ctx = canvas.getContext('2d');
+      
+      // Create chart with optimized options
+      const chart = new Chart(ctx, {
+        ...createOptimizedChartOptions(),
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: '#4CAF50',
+            fill: false
+          }]
+        }
+      });
+
+      // Optimize chart for real-time updates
+      optimizeChartForRealtime(chart);
+      
+      // Store chart instance
+      this.chartInstances.set(chartId, chart);
+    });
+  }
+
+  updateCharts(data) {
+    this.chartInstances.forEach((chart, chartId) => {
+      const chartData = data[chartId];
+      if (chartData) {
+        // Downsample data if needed
+        const optimizedData = downsampleChartData(chartData);
+        
+        // Update chart with debouncing
+        const debouncedUpdate = createDebouncedChartUpdate(chart);
+        debouncedUpdate(optimizedData);
       }
     });
   }
@@ -46,55 +170,6 @@ class PopupManager {
       <button class="nav-tab" data-tab="focus">Focus Mode</button>
       <button class="nav-tab" data-tab="settings">Settings</button>
     `;
-
-    // Add click listeners to tabs
-    const tabs = navContainer.querySelectorAll('.nav-tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
-    });
-  }
-
-  async initializeComponents() {
-    // Initialize time remaining display
-    this.timeRemainingDisplay = new TimeRemainingDisplay();
-    const dashboardContainer = document.querySelector('#dashboard-container');
-    dashboardContainer.insertBefore(
-      this.timeRemainingDisplay.getContainer(),
-      dashboardContainer.firstChild
-    );
-
-    // Initialize limit settings panel
-    this.limitSettingsPanel = new LimitSettingsPanel();
-    const limitContainer = document.querySelector('#limits-container');
-    limitContainer.appendChild(this.limitSettingsPanel.getContainer());
-
-    // Initialize blocking settings
-    this.blockingSettings = new BlockingSettings(
-      document.querySelector('#blocking-container')
-    );
-
-    // Initialize focus mode
-    this.focusMode = new FocusMode(
-      document.querySelector('#focus-container')
-    );
-
-    // Hide all containers initially except dashboard
-    document.querySelectorAll('.tab-container').forEach(container => {
-      container.classList.add('hidden');
-    });
-    document.querySelector('#dashboard-container').classList.remove('hidden');
-  }
-
-  async loadCurrentTabInfo() {
-    try {
-      this.currentTab = await getCurrentTab();
-      if (this.currentTab) {
-        await this.updateCurrentSiteInfo(this.currentTab);
-        await this.refreshTimeDisplay();
-      }
-    } catch (error) {
-      console.error('Error loading current tab info:', error);
-    }
   }
 
   switchTab(tabName) {
@@ -108,20 +183,19 @@ class PopupManager {
       container.classList.toggle('hidden', container.id !== `${tabName}-container`);
     });
 
-    // Special handling for different tabs
-    switch (tabName) {
-      case 'limits':
-        this.limitSettingsPanel.loadExistingLimits();
-        break;
-      case 'dashboard':
-        this.refreshTimeDisplay();
-        break;
-      case 'blocking':
-        this.blockingSettings.loadBlockingRules();
-        break;
-      case 'focus':
-        this.focusMode.render();
-        break;
+    // Throttle updates for performance
+    this.throttledUpdate();
+  }
+
+  async loadCurrentTabInfo() {
+    try {
+      this.currentTab = await getCurrentTab();
+      if (this.currentTab) {
+        await this.throttledUpdate();
+        await this.debouncedRefresh();
+      }
+    } catch (error) {
+      console.error('Error loading current tab info:', error);
     }
   }
 
@@ -149,28 +223,28 @@ class PopupManager {
   }
 
   setupQuickActionButtons(domain) {
-    // Quick limit button
-    const quickLimitBtn = document.querySelector('#quick-limit-btn');
-    quickLimitBtn?.addEventListener('click', () => {
-      this.switchTab('limits');
-      this.limitSettingsPanel.showLimitForm(domain);
-    });
-
-    // Quick block button
-    const quickBlockBtn = document.querySelector('#quick-block-btn');
-    quickBlockBtn?.addEventListener('click', () => {
-      this.switchTab('blocking');
-      this.blockingSettings.addBlockedSite(domain);
-    });
-
-    // Quick focus button
-    const quickFocusBtn = document.querySelector('#quick-focus-btn');
-    quickFocusBtn?.addEventListener('click', () => {
-      this.switchTab('focus');
-      const blockedSites = document.querySelector('#blockedSites');
-      if (blockedSites) {
-        blockedSites.value = domain;
+    const buttons = {
+      'quick-limit-btn': () => {
+        this.switchTab('limits');
+        this.components.get('limitSettingsPanel')?.showLimitForm(domain);
+      },
+      'quick-block-btn': () => {
+        this.switchTab('blocking');
+        this.components.get('blockingSettings')?.addBlockedSite(domain);
+      },
+      'quick-focus-btn': () => {
+        this.switchTab('focus');
+        const focusMode = this.components.get('focusMode');
+        if (focusMode) {
+          const blockedSites = focusMode.getElement('#blockedSites');
+          if (blockedSites) blockedSites.value = domain;
+        }
       }
+    };
+
+    // Set up event listeners
+    Object.entries(buttons).forEach(([id, handler]) => {
+      document.querySelector(`#${id}`)?.addEventListener('click', handler);
     });
   }
 
@@ -180,14 +254,29 @@ class PopupManager {
       chrome.runtime.sendMessage(
         { action: 'getTimeRemaining', domain },
         timeInfo => {
-          this.timeRemainingDisplay?.updateDisplay(timeInfo);
+          this.components.get('timeRemainingDisplay')?.updateDisplay(timeInfo);
         }
       );
     }
   }
 
   cleanup() {
-    this.focusMode?.stopUpdates();
+    // Clean up chart instances
+    this.chartInstances.forEach((chart, id) => {
+      cleanupChart(chart);
+    });
+    this.chartInstances.clear();
+
+    // Clean up components
+    this.components.forEach(component => {
+      if (component.cleanup) {
+        component.cleanup();
+      }
+    });
+    this.components.clear();
+
+    // Remove event listeners
+    window.removeEventListener('unload', this.cleanup);
   }
 }
 
