@@ -16,6 +16,27 @@ body {
   padding: 16px;
 }
 
+/* Error container */
+.error-container {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #ff3b30;
+  color: white;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 14px;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
 /* Header styles */
 .header {
   margin-bottom: 16px;
@@ -40,17 +61,16 @@ h1 {
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
-.date-selector button:hover {
+.date-selector button:hover:not(:disabled) {
   background: #f0f0f0;
-  border-color: #bbb;
 }
 
-.date-selector button:active {
-  background: #e8e8e8;
-  transform: translateY(1px);
+.date-selector button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Section styles */
@@ -60,11 +80,7 @@ section {
   padding: 16px;
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s ease;
-}
-
-section:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.2s ease;
 }
 
 h2 {
@@ -74,71 +90,29 @@ h2 {
   color: #666;
 }
 
-/* Loading state */
-.loading {
-  opacity: 0.6;
-  position: relative;
-  pointer-events: none;
-}
-
-.loading::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid #ddd;
-  border-top-color: #0066cc;
-  border-radius: 50%;
-  animation: loading-spinner 0.8s linear infinite;
-}
-
-@keyframes loading-spinner {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Stats container */
 .stat-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-}
-
-.stat-container:hover {
-  background-color: #f8f8f8;
+  transition: opacity 0.2s ease;
 }
 
 .domain {
   font-weight: 500;
   color: #2c2c2c;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.active-indicator {
-  width: 8px;
-  height: 8px;
-  background-color: #34c759;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.inactive {
-  background-color: #ddd;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .time {
   font-weight: 600;
   color: #0066cc;
+  min-width: 60px;
+  text-align: right;
 }
 
 /* Top sites list */
@@ -146,53 +120,71 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: opacity 0.2s ease;
 }
 
 .site-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px;
   background: #f8f8f8;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
 }
 
 .site-item:hover {
   background: #f0f0f0;
-  transform: translateX(2px);
 }
 
 .site-domain {
   font-size: 13px;
   color: #444;
-  white-space: nowrap;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  white-space: nowrap;
 }
 
 .site-time {
   font-size: 13px;
   color: #666;
   font-weight: 500;
-  min-width: 70px;
+  min-width: 60px;
   text-align: right;
 }
 
-/* Error state */
-.error-message {
-  color: #ff3b30;
-  font-size: 12px;
-  margin-top: 8px;
-  padding: 8px;
-  background-color: #fff5f5;
-  border-radius: 4px;
-  display: none;
+/* Loading state */
+.loading-state {
+  position: relative;
 }
 
-.error .error-message {
-  display: block;
+.loading-state::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.loading-state.loading::after {
+  opacity: 1;
+}
+
+/* No data state */
+.no-data {
+  text-align: center;
+  padding: 16px;
+  color: #666;
+  font-style: italic;
+  background: #f8f8f8;
+  border-radius: 4px;
 }
 
 /* Utility classes */
@@ -204,12 +196,4 @@ h2 {
 .total-visits {
   font-weight: 600;
   color: #0066cc;
-}
-
-/* Empty state */
-.empty-state {
-  text-align: center;
-  padding: 16px;
-  color: #666;
-  font-size: 13px;
 }
