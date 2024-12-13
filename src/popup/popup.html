@@ -8,16 +8,44 @@
 </head>
 <body>
   <div class="container">
-    <h1>Screen Time Monitor</h1>
-    <div id="current-site">
-      <h2>Current Site</h2>
-      <p id="site-time">Loading...</p>
-    </div>
-    <div id="daily-total">
-      <h2>Today's Total</h2>
-      <p id="total-time">Loading...</p>
-    </div>
+    <header class="header">
+      <h1>Screen Time Monitor</h1>
+      <div class="date-selector">
+        <button id="prevDay">&lt;</button>
+        <span id="currentDate">Today</span>
+        <button id="nextDay">&gt;</button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <section class="current-site">
+        <h2>Current Site</h2>
+        <div class="stat-container">
+          <div class="domain" id="currentDomain">Not active</div>
+          <div class="time" id="currentTime">0m</div>
+        </div>
+      </section>
+
+      <section class="daily-summary">
+        <h2>Daily Summary</h2>
+        <div class="stat-container">
+          <div class="total-label">Total Time</div>
+          <div class="total-time" id="totalTime">0h 0m</div>
+        </div>
+        <div class="stat-container">
+          <div class="total-label">Sites Visited</div>
+          <div class="total-visits" id="totalSites">0</div>
+        </div>
+      </section>
+
+      <section class="top-sites">
+        <h2>Top Sites</h2>
+        <div id="topSitesList" class="sites-list">
+          <!-- Top sites will be inserted here -->
+        </div>
+      </section>
+    </main>
   </div>
-  <script src="popup.js"></script>
+  <script src="popup.js" type="module"></script>
 </body>
 </html>
