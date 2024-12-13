@@ -8,12 +8,13 @@ module.exports = {
   mode: 'production',
   entry: {
     popup: './src/popup/popup.js',
-    background: './src/background/service-worker.js',
-    content: './src/content/content-script.js'
+    'background/service-worker': './src/background/service-worker.js',
+    'content/content-script': './src/content/content-script.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].js'
+    filename: '[name].js',
+    clean: true
   },
   optimization: {
     minimize: true,
@@ -27,11 +28,7 @@ module.exports = {
         }
       }),
       new CssMinimizerPlugin()
-    ],
-    splitChunks: {
-      chunks: 'all',
-      name: 'vendor'
-    }
+    ]
   },
   module: {
     rules: [
