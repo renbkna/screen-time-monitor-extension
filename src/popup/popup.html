@@ -19,33 +19,81 @@
       </div>
     </header>
 
+    <nav class="tab-navigation">
+      <button id="overviewTab" class="tab-button active">Overview</button>
+      <button id="statsTab" class="tab-button">Statistics</button>
+    </nav>
+
     <main class="main-content">
-      <section class="current-site">
-        <h2>Current Site</h2>
-        <div class="stat-container loading-state">
-          <div class="domain" id="currentDomain">Loading...</div>
-          <div class="time" id="currentTime">--</div>
-        </div>
-      </section>
+      <!-- Overview Tab Content -->
+      <div id="overviewContent" class="tab-content active">
+        <section class="current-site">
+          <h2>Current Site</h2>
+          <div class="stat-container loading-state">
+            <div class="domain" id="currentDomain">Loading...</div>
+            <div class="time" id="currentTime">--</div>
+          </div>
+        </section>
 
-      <section class="daily-summary">
-        <h2>Daily Summary</h2>
-        <div class="stat-container loading-state">
-          <div class="total-label">Total Time</div>
-          <div class="total-time" id="totalTime">--</div>
-        </div>
-        <div class="stat-container loading-state">
-          <div class="total-label">Sites Visited</div>
-          <div class="total-visits" id="totalSites">--</div>
-        </div>
-      </section>
+        <section class="daily-summary">
+          <h2>Daily Summary</h2>
+          <div class="stat-container loading-state">
+            <div class="total-label">Total Time</div>
+            <div class="total-time" id="totalTime">--</div>
+          </div>
+          <div class="stat-container loading-state">
+            <div class="total-label">Sites Visited</div>
+            <div class="total-visits" id="totalSites">--</div>
+          </div>
+        </section>
 
-      <section class="top-sites">
-        <h2>Most Visited Sites</h2>
-        <div id="topSitesList" class="sites-list loading-state">
-          <div class="no-data">Loading...</div>
+        <section class="top-sites">
+          <h2>Most Visited Sites</h2>
+          <div id="topSitesList" class="sites-list loading-state">
+            <div class="no-data">Loading...</div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Statistics Tab Content -->
+      <div id="statsContent" class="tab-content">
+        <div class="chart-controls">
+          <select id="timeRange" class="time-range-select">
+            <option value="day">Today</option>
+            <option value="week">Past Week</option>
+            <option value="month">Past Month</option>
+            <option value="year">Past Year</option>
+          </select>
         </div>
-      </section>
+
+        <section class="time-distribution">
+          <h2>Time Distribution</h2>
+          <div class="chart-container">
+            <canvas id="timeDistributionChart"></canvas>
+          </div>
+        </section>
+
+        <section class="daily-trend">
+          <h2>Daily Usage Trend</h2>
+          <div class="chart-container">
+            <canvas id="dailyTrendChart"></canvas>
+          </div>
+        </section>
+
+        <section class="category-distribution">
+          <h2>Category Distribution</h2>
+          <div class="chart-container">
+            <canvas id="categoryDistributionChart"></canvas>
+          </div>
+        </section>
+
+        <section class="insights">
+          <h2>Key Insights</h2>
+          <div id="insightsList" class="insights-list">
+            <div class="insight-item loading-state">Analyzing your browsing patterns...</div>
+          </div>
+        </section>
+      </div>
     </main>
   </div>
 
