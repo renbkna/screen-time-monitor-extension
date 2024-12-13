@@ -1,1 +1,31 @@
-{\n  \"manifest_version\": 3,\n  \"name\": \"Screen Time Monitor\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Monitor and manage your screen time with detailed insights and controls\",\n  \"permissions\": [\n    \"storage\",\n    \"tabs\",\n    \"webNavigation\",\n    \"alarms\",\n    \"notifications\",\n    \"idle\"\n  ],\n  \"background\": {\n    \"service_worker\": \"background/service-worker.js\",\n    \"type\": \"module\"\n  },\n  \"action\": {\n    \"default_popup\": \"popup/popup.html\"\n  },\n  \"content_scripts\": [\n    {\n      \"matches\": [\"<all_urls>\"],\n      \"js\": [\"content/content-script.js\"]\n    }\n  ],\n  \"web_accessible_resources\": [{\n    \"resources\": [\"blocked/blocked.html\", \"blocked/blocked.css\", \"blocked/blocked.js\", \"icons/*\"],\n    \"matches\": [\"<all_urls>\"]\n  }]\n}
+{
+  "manifest_version": 3,
+  "name": "Screen Time Monitor",
+  "version": "1.0.0",
+  "description": "Monitor and manage your screen time with detailed insights and controls",
+  "permissions": [
+    "storage",
+    "tabs",
+    "webNavigation",
+    "alarms",
+    "notifications",
+    "idle"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content-script.js"]
+    }
+  ],
+  "web_accessible_resources": [{
+    "resources": ["blocked/blocked.html", "blocked/blocked.css", "blocked/blocked.js", "icons/*"],
+    "matches": ["<all_urls>"]
+  }]
+}
