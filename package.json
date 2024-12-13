@@ -6,7 +6,14 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:integration": "jest --config=jest.integration.config.js",
+    "test:e2e": "jest --config=jest.e2e.config.js",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch",
+    "format": "prettier --write 'src/**/*.{js,jsx,css,html}'"
   },
   "jest": {
     "setupFiles": ["./tests/setup.js"],
@@ -38,9 +45,23 @@
     "@babel/core": "^7.16.7",
     "@babel/preset-env": "^7.16.7",
     "@testing-library/jest-dom": "^5.16.1",
+    "@testing-library/user-event": "^14.4.3",
     "babel-jest": "^27.4.6",
+    "babel-loader": "^8.2.3",
+    "css-loader": "^6.5.1",
+    "eslint": "^8.6.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-jest": "^27.2.3",
+    "eslint-plugin-prettier": "^4.0.0",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^27.4.7",
-    "jest-environment-jsdom": "^27.4.6"
+    "jest-chrome": "^0.8.0",
+    "jest-environment-jsdom": "^27.4.6",
+    "jest-webextension-mock": "^3.8.9",
+    "prettier": "^2.5.1",
+    "puppeteer": "^21.5.0",
+    "style-loader": "^3.3.1",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1"
   }
 }
