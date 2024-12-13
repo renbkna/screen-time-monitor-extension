@@ -11,22 +11,25 @@
     <header class="header">
       <h1>Screen Time Monitor</h1>
       <div class="date-selector">
-        <button id="prevDay">&lt;</button>
+        <button id="prevDay" title="Previous day">&lt;</button>
         <span id="currentDate">Today</span>
-        <button id="nextDay">&gt;</button>
+        <button id="nextDay" title="Next day">&gt;</button>
       </div>
     </header>
 
     <main class="main-content">
-      <section class="current-site">
+      <section class="current-site" id="currentSiteSection">
         <h2>Current Site</h2>
         <div class="stat-container">
-          <div class="domain" id="currentDomain">Not active</div>
+          <div class="domain">
+            <span class="active-indicator" id="activeIndicator"></span>
+            <span id="currentDomain">Not active</span>
+          </div>
           <div class="time" id="currentTime">0m</div>
         </div>
       </section>
 
-      <section class="daily-summary">
+      <section class="daily-summary" id="dailySummarySection">
         <h2>Daily Summary</h2>
         <div class="stat-container">
           <div class="total-label">Total Time</div>
@@ -36,13 +39,16 @@
           <div class="total-label">Sites Visited</div>
           <div class="total-visits" id="totalSites">0</div>
         </div>
+        <div class="error-message">Failed to load daily statistics</div>
       </section>
 
-      <section class="top-sites">
+      <section class="top-sites" id="topSitesSection">
         <h2>Top Sites</h2>
         <div id="topSitesList" class="sites-list">
           <!-- Top sites will be inserted here -->
+          <div class="empty-state">No sites visited yet today</div>
         </div>
+        <div class="error-message">Failed to load top sites</div>
       </section>
     </main>
   </div>
