@@ -1,196 +1,173 @@
-import { registerShortcuts, makeAccessible, setupKeyboardNavigation } from '../utils/keyboard.js';
-import Tooltip from '../components/ui/Tooltip.js';
-import Onboarding from '../components/ui/Onboarding.js';
-import FocusMode from './components/FocusMode.js';
-import FocusStats from './components/FocusStats.js';
+import { StatsViewer } from '../components/StatsViewer.jsx';
+import { getCurrentTabInfo } from '../utils/browserUtils.js';
+import { formatTime } from '../utils/timeUtils.js';
 
 class PopupManager {
-  constructor() {
-    this.currentTab = 'overview';
-    this.components = {};
-    this.init();
-  }
+    constructor() {
+        this.currentTab = null;
+        this.statsViewer = null;
+        this.initializePopup();
+    }
 
-  async init() {
-    this.initializeKeyboardShortcuts();
-    this.setupAccessibility();
-    await this.initializeComponents();
-    this.showTab(this.currentTab);
-    
-    // Start onboarding for first-time users
-    await Onboarding.init();
-  }
+    async initializePopup() {
+        // Initialize components
+        this.initializeTabNavigation();
+        this.initializeStatsViewer();
+        
+        // Load initial data
+        await this.loadCurrentTabInfo();
+        await this.updateCurrentSiteStats();
+    }
 
-  initializeKeyboardShortcuts() {
-    registerShortcuts({
-      toggleFocus: () => {
-        this.showTab('focus');
-      },
-      showStats: () => {
-        this.showTab('overview');
-      },
-      showLimits: () => {
-        this.showTab('limits');
-      },
-      quickFocus: async () => {
-        this.showTab('focus');
-        await this.components.focusMode?.startQuickFocus();
-      },
-      closePopup: () => {
-        window.close();
-      }
-    });
-  }
+    initializeTabNavigation() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanels = document.querySelectorAll('.tab-panel');
 
-  setupAccessibility() {
-    // Make tabs accessible
-    const tablist = document.querySelector('.tab-navigation');
-    makeAccessible(tablist, { role: 'tablist' });
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and panels
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanels.forEach(panel => panel.classList.remove('active'));
 
-    document.querySelectorAll('.tab-button').forEach(button => {
-      makeAccessible(button, {
-        role: 'tab',
-        selected: button.classList.contains('active'),
-        controls: button.dataset.tab
-      });
-    });
+                // Add active class to clicked button and corresponding panel
+                button.classList.add('active');
+                const tabId = button.dataset.tab;
+                document.getElementById(tabId).classList.add('active');
 
-    document.querySelectorAll('.tab-panel').forEach(panel => {
-      makeAccessible(panel, {
-        role: 'tabpanel',
-        label: `${panel.id} panel`
-      });
-    });
-
-    // Setup keyboard navigation for tabs
-    setupKeyboardNavigation(tablist, '.tab-button');
-  }
-
-  async initializeComponents() {
-    // Initialize Focus Mode components
-    const focusModeContainer = document.getElementById('focus-mode-controls');
-    const focusStatsContainer = document.getElementById('focus-mode-stats');
-    
-    this.components.focusMode = new FocusMode(focusModeContainer);
-    this.components.focusStats = new FocusStats(focusStatsContainer);
-
-    // Add tooltips to key elements
-    const tooltip = new Tooltip();
-    this.addTooltips();
-
-    // Initialize other components as needed
-    // ...
-
-    // Setup tab switching animation
-    this.setupTabTransitions();
-  }
-
-  addTooltips() {
-    const tooltips = [
-      {
-        target: '[data-tab="focus"]',
-        content: 'Start a focus session (Alt+F)',
-      },
-      {
-        target: '#quick-focus-button',
-        content: 'Quick 25-minute focus session (Alt+Q)',
-      },
-      {
-        target: '[data-tab="limits"]',
-        content: 'Set website time limits (Alt+L)',
-      },
-      {
-        target: '.stats-range-select',
-        content: 'Change time range for statistics',
-      }
-    ];
-
-    tooltips.forEach(({ target, content }) => {
-      const element = document.querySelector(target);
-      if (element) {
-        element.dataset.tooltip = content;
-      }
-    });
-  }
-
-  setupTabTransitions() {
-    const content = document.querySelector('.tab-content');
-    content.addEventListener('beforeTransition', () => {
-      content.classList.add('transitioning');
-    });
-
-    content.addEventListener('afterTransition', () => {
-      content.classList.remove('transitioning');
-    });
-  }
-
-  showTab(tabId) {
-    const beforeEvent = new CustomEvent('beforeTransition', {
-      detail: { from: this.currentTab, to: tabId }
-    });
-    document.dispatchEvent(beforeEvent);
-
-    // Update tab buttons
-    document.querySelectorAll('.tab-button').forEach(button => {
-      const isActive = button.dataset.tab === tabId;
-      button.classList.toggle('active', isActive);
-      button.setAttribute('aria-selected', isActive);
-      
-      // Add ripple effect on tab change
-      if (isActive) {
-        this.addRipple(button);
-      }
-    });
-
-    // Update tab panels with transition
-    document.querySelectorAll('.tab-panel').forEach(panel => {
-      if (panel.id === tabId) {
-        panel.classList.add('fade-enter');
-        panel.classList.add('active');
-        requestAnimationFrame(() => {
-          panel.classList.remove('fade-enter');
+                // Special handling for stats tab
+                if (tabId === 'stats' && this.statsViewer) {
+                    this.statsViewer.updateStats();
+                }
+            });
         });
-      } else {
-        panel.classList.remove('active');
-      }
-    });
+    }
 
-    this.currentTab = tabId;
+    initializeStatsViewer() {
+        const container = document.getElementById('stats-container');
+        this.statsViewer = new StatsViewer(container);
+    }
 
-    const afterEvent = new CustomEvent('afterTransition', {
-      detail: { from: this.currentTab, to: tabId }
-    });
-    document.dispatchEvent(afterEvent);
-  }
+    async loadCurrentTabInfo() {
+        try {
+            this.currentTab = await getCurrentTabInfo();
+            await this.updateCurrentSiteStats();
+        } catch (error) {
+            console.error('Error loading current tab info:', error);
+            this.showError('Error loading current tab information');
+        }
+    }
 
-  addRipple(element) {
-    const ripple = document.createElement('div');
-    ripple.className = 'ripple';
-    element.appendChild(ripple);
+    async updateCurrentSiteStats() {
+        if (!this.currentTab || !this.currentTab.url) return;
 
-    const rect = element.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    ripple.style.width = ripple.style.height = `${size}px`;
+        try {
+            const domain = new URL(this.currentTab.url).hostname;
+            const { dailyStats = {} } = await chrome.storage.local.get('dailyStats');
+            const today = new Date().toISOString().split('T')[0];
+            const siteStats = dailyStats[today]?.[domain] || { totalTime: 0, visits: 0 };
 
-    ripple.addEventListener('animationend', () => {
-      ripple.remove();
-    });
-  }
+            this.updateCurrentSiteDisplay(domain, siteStats);
+        } catch (error) {
+            console.error('Error updating current site stats:', error);
+            this.showError('Error loading site statistics');
+        }
+    }
 
-  // Clean up when popup is closed
-  destroy() {
-    Object.values(this.components).forEach(component => {
-      if (component.destroy) {
-        component.destroy();
-      }
-    });
-  }
+    updateCurrentSiteDisplay(domain, stats) {
+        const container = document.getElementById('current-site-stats');
+        container.innerHTML = `
+            <div class="current-site-info">
+                <h2 class="site-domain">${domain}</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Time Today</span>
+                        <span class="stat-value">${formatTime(stats.totalTime)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Visits</span>
+                        <span class="stat-value">${stats.visits}</span>
+                    </div>
+                </div>
+                ${this.getQuickActionsHTML(domain)}
+            </div>
+        `;
+
+        this.attachQuickActionListeners(domain);
+    }
+
+    getQuickActionsHTML(domain) {
+        return `
+            <div class="quick-actions">
+                <button class="action-button" data-action="block" data-domain="${domain}">
+                    Block Site
+                </button>
+                <button class="action-button" data-action="focus" data-domain="${domain}">
+                    Start Focus Session
+                </button>
+                <button class="action-button" data-action="limit" data-domain="${domain}">
+                    Set Limit
+                </button>
+            </div>
+        `;
+    }
+
+    attachQuickActionListeners(domain) {
+        const actionButtons = document.querySelectorAll('.action-button');
+        actionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const action = button.dataset.action;
+                this.handleQuickAction(action, domain);
+            });
+        });
+    }
+
+    async handleQuickAction(action, domain) {
+        switch (action) {
+            case 'block':
+                await this.handleBlockSite(domain);
+                break;
+            case 'focus':
+                await this.handleStartFocus(domain);
+                break;
+            case 'limit':
+                await this.handleSetLimit(domain);
+                break;
+        }
+    }
+
+    async handleBlockSite(domain) {
+        // Switch to settings tab and open blocking dialog
+        const settingsTab = document.querySelector('[data-tab="settings"]');
+        settingsTab.click();
+        // Additional implementation needed
+    }
+
+    async handleStartFocus(domain) {
+        // Switch to focus tab and start session
+        const focusTab = document.querySelector('[data-tab="focus"]');
+        focusTab.click();
+        // Additional implementation needed
+    }
+
+    async handleSetLimit(domain) {
+        // Switch to settings tab and open limit dialog
+        const settingsTab = document.querySelector('[data-tab="settings"]');
+        settingsTab.click();
+        // Additional implementation needed
+    }
+
+    showError(message) {
+        const container = document.getElementById('current-site-stats');
+        container.innerHTML = `
+            <div class="error-message">
+                <p>${message}</p>
+                <button onclick="window.location.reload()">Retry</button>
+            </div>
+        `;
+    }
 }
 
-// Initialize popup
-const popup = new PopupManager();
-
-// Clean up on popup close
-window.addEventListener('unload', () => {
-  popup.destroy();
+// Initialize popup when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new PopupManager();
 });
