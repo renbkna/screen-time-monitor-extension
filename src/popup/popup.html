@@ -1,48 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Screen Time Monitor</title>
-  <link rel="stylesheet" href="../styles/popup.css">
-  <link rel="stylesheet" href="../styles/focus-stats.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Time Monitor</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="../styles/popup.css">
+    <link rel="stylesheet" href="../styles/stats-visualizer.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
 </head>
 <body>
-  <div class="popup-container">
-    <nav class="tab-navigation">
-      <button class="tab-button active" data-tab="overview">Overview</button>
-      <button class="tab-button" data-tab="focus">Focus</button>
-      <button class="tab-button" data-tab="limits">Limits</button>
-      <button class="tab-button" data-tab="settings">Settings</button>
-    </nav>
+    <div class="popup-container">
+        <nav class="tab-navigation">
+            <button class="tab-button active" data-tab="overview">Overview</button>
+            <button class="tab-button" data-tab="stats">Statistics</button>
+            <button class="tab-button" data-tab="focus">Focus</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
+        </nav>
 
-    <main class="tab-content">
-      <!-- Overview Tab -->
-      <section id="overview" class="tab-panel active">
-        <div id="daily-overview"></div>
-        <div id="site-breakdown"></div>
-      </section>
+        <main class="tab-content">
+            <!-- Overview Tab -->
+            <section id="overview" class="tab-panel active">
+                <div id="current-site-stats"></div>
+                <div id="quick-actions"></div>
+            </section>
 
-      <!-- Focus Mode Tab -->
-      <section id="focus" class="tab-panel">
-        <div class="focus-mode-wrapper">
-          <div id="focus-mode-controls"></div>
-          <div id="focus-mode-stats" class="hidden"></div>
-        </div>
-      </section>
+            <!-- Statistics Tab -->
+            <section id="stats" class="tab-panel">
+                <div id="stats-container"></div>
+            </section>
 
-      <!-- Limits Tab -->
-      <section id="limits" class="tab-panel">
-        <div id="limit-settings"></div>
-      </section>
+            <!-- Focus Mode Tab -->
+            <section id="focus" class="tab-panel">
+                <div id="focus-mode-controls"></div>
+            </section>
 
-      <!-- Settings Tab -->
-      <section id="settings" class="tab-panel">
-        <div id="extension-settings"></div>
-      </section>
-    </main>
-  </div>
+            <!-- Settings Tab -->
+            <section id="settings" class="tab-panel">
+                <div id="settings-container"></div>
+            </section>
+        </main>
+    </div>
 
-  <script type="module" src="popup.js"></script>
+    <!-- Scripts -->
+    <script type="module" src="popup.js"></script>
 </body>
 </html>
