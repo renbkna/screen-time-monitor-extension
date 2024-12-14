@@ -1,8 +1,10 @@
+import '@testing-library/jest-dom';
 import { createChromeMock } from './mocks/chrome.mock';
 
+// Set up global chrome mock
 global.chrome = createChromeMock();
 
-// Setup DOM environment for popup tests
+// Set up DOM environment for popup tests
 document.body.innerHTML = `
   <div id="app">
     <div id="stats-container"></div>
@@ -12,8 +14,25 @@ document.body.innerHTML = `
   </div>
 `;
 
-// Reset mocks before each test
-beforeEach(() => {
+// Extend Jest with additional matchers
+expect.extend({
+  toBeValidDate: function(received) {
+    const pass = received instanceof Date && !isNaN(received);
+    return {
+      pass,
+      message: () => `expected ${received} to be a valid date`
+    };
+  }
+});
+
+// Global test hooks
+global.beforeEach(() => {
   jest.clearAllMocks();
   global.chrome = createChromeMock();
+});
+
+global.afterEach(() => {
+  jest.clearAllMocks();
+  localStorage.clear();
+  sessionStorage.clear();
 });
