@@ -1,4 +1,3 @@
-
 import { storage } from '../utils/storage.js';
 import { messageActiveTab } from '../utils/messaging.js';
 
