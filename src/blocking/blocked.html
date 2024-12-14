@@ -1,104 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Site Blocked</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f5f5f5;
-            color: #333;
-        }
-        .container {
-            text-align: center;
-            padding: 2rem;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 90%;
-        }
-        h1 {
-            color: #e74c3c;
-            margin-bottom: 1rem;
-        }
-        .message {
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
-        }
-        .timer {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin: 1rem 0;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.2s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        .reason {
-            margin-top: 1rem;
-            font-style: italic;
-            color: #666;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Blocked - Screen Time Monitor</title>
+    <link rel="stylesheet" href="../styles/blocked.css">
 </head>
 <body>
     <div class="container">
-        <h1>Site Blocked</h1>
-        <div class="message">
-            This site has been blocked according to your screen time settings.
+        <div class="blocked-card">
+            <div class="icon-container">
+                <svg class="block-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                </svg>
+            </div>
+
+            <h1>Site Blocked</h1>
+            <div id="block-reason" class="reason"></div>
+            <div id="time-remaining" class="time-remaining"></div>
+
+            <div class="actions">
+                <button id="back-button" class="button secondary">
+                    Go Back
+                </button>
+                <button id="override-button" class="button primary">
+                    Override Block
+                </button>
+            </div>
+
+            <div id="override-form" class="override-form hidden">
+                <p>Enter your override reason:</p>
+                <textarea id="override-reason" rows="3" placeholder="Why do you need to access this site?"></textarea>
+                <div class="form-actions">
+                    <button id="cancel-override" class="button secondary">Cancel</button>
+                    <button id="confirm-override" class="button primary">Confirm Override</button>
+                </div>
+            </div>
+
+            <div class="suggestions">
+                <h3>Instead, why not try:</h3>
+                <div id="suggestions-list" class="suggestions-list">
+                    <!-- Suggestions will be dynamically populated -->
+                </div>
+            </div>
         </div>
-        <div class="timer" id="timer"></div>
-        <div class="reason" id="blockReason"></div>
-        <button id="settingsBtn">Open Settings</button>
+
+        <div class="stats-summary">
+            <h3>Today's Progress</h3>
+            <div id="daily-stats" class="stats-grid">
+                <!-- Stats will be dynamically populated -->
+            </div>
+        </div>
     </div>
-    <script>
-        document.getElementById('settingsBtn').addEventListener('click', () => {
-            chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' });
-        });
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const reason = urlParams.get('reason');
-        const endTime = urlParams.get('endTime');
+    <div id="notification" class="notification hidden">
+        <span id="notification-message"></span>
+    </div>
 
-        if (reason) {
-            document.getElementById('blockReason').textContent = reason;
-        }
-
-        if (endTime) {
-            function updateTimer() {
-                const now = new Date().getTime();
-                const end = new Date(parseInt(endTime)).getTime();
-                const distance = end - now;
-
-                if (distance <= 0) {
-                    document.getElementById('timer').textContent = 'Block period ended';
-                    chrome.runtime.sendMessage({ type: 'CHECK_BLOCK_STATUS' });
-                } else {
-                    const hours = Math.floor(distance / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    document.getElementById('timer').textContent = 
-                        `Time remaining: ${hours}h ${minutes}m`;
-                }
-            }
-
-            updateTimer();
-            setInterval(updateTimer, 60000);
-        }
-    </script>
+    <script type="module" src="blocked.js"></script>
 </body>
 </html>
