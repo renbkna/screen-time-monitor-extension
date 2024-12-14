@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "webpack --config webpack.dev.js --watch",
     "build": "webpack --config webpack.prod.js",
-    "test": "jest",
+    "test": "jest --config jest.config.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.js",
@@ -58,28 +58,6 @@
   "engines": {
     "node": ">= 16.0.0",
     "npm": ">= 8.0.0"
-  },
-  "jest": {
-    "testEnvironment": "jsdom",
-    "setupFiles": [
-      "jest-chrome"
-    ],
-    "moduleNameMapper": {
-      "\\.css$": "<rootDir>/tests/mocks/styleMock.js"
-    },
-    "collectCoverageFrom": [
-      "src/**/*.js",
-      "!src/tests/**",
-      "!**/node_modules/**"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 80,
-        "functions": 80,
-        "lines": 80,
-        "statements": 80
-      }
-    }
   },
   "browserslist": [
     ">0.2%",
