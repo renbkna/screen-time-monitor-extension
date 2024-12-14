@@ -1,18 +1,21 @@
 module.exports = {
   testEnvironment: 'jsdom',
-  setupFiles: ['./tests/setup.js'],
-  setupFilesAfterEnv: ['jest-extended'],
+  roots: ['<rootDir>/src', '<rootDir>/tests'],
+  setupFilesAfterEnv: ['@testing-library/jest-dom', './tests/setup.js'],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@/(.*)$': '<rootDir>/src/$1'
   },
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx}',
     '!src/index.js',
-    '!src/setupTests.js',
+    '!src/setupTests.js'
   ],
   transform: {
-    '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.jsx?$': 'babel-jest'
   },
-  verbose: true
+  verbose: true,
+  testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[tj]s?(x)'],
+  moduleFileExtensions: ['js', 'jsx', 'json', 'node']
 };
