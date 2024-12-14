@@ -44,7 +44,7 @@ async function blockSite(domain) {
 function notifyLimitReached(domain) {
   chrome.notifications.create({
     type: 'basic',
-    iconUrl: 'path/to/icon.png',
+    iconUrl: 'path/to/icon.png', 
     title: 'Screen Time Limit Reached',
     message: `You have reached your screen time limit for ${domain}.`
   });
