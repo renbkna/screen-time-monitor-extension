@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Time Monitor</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="../styles/popup.css">
+    <link rel="stylesheet" href="../styles/stats-visualizer.css">
+  
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide-static@latest/dist/umd/lucide.min.js"></script>
+
+</head>
+<body>
+    <div class="popup-container">
+        <nav class="tab-navigation">
+            <button class="tab-button active" data-tab="overview">
+                <i icon-name="home"></i> Overview
+            </button>
+            <button class="tab-button" data-tab="stats">
+                <i icon-name="bar-chart-2"></i> Statistics  
+            </button>
+            <button class="tab-button" data-tab="focus">
+                <i icon-name="target"></i> Focus
+            </button>
+            <button class="tab-button" data-tab="settings">
+                <i icon-name="settings"></i> Settings
+            </button>
+        </nav>
+
+        <main class="tab-content">
+            <!-- Overview Tab -->
+            <section id="overview" class="tab-panel active">
+                
+                <div id="current-site-stats">
+                    <h2>Current Site</h2>
+                    <h1 id="current-site">example.com</h1>
+                    <p>Total Time: <span id="current-site-time">00:00</span></p>
+                    <div class="progress-bar">
+                        <div id="current-site-progress" class="progress"></div>
+                    </div>
+                    <p id="limit-text">0% of Daily Limit</p>
+                </div>
+                
+                <div id="quick-actions">
+                    <h2>Quick Actions</h2>
+                    <button id="block-site-btn" class="action-button">Block Site</button>
+                    <button id="focus-mode-btn" class="action-button">5 Min Focus</button>
+                </div>
+                
+            </section>
+
+            <!-- Statistics Tab -->
+            <section id="stats" class="tab-panel">
+                <div id="stats-container"></div>
+            </section>
+
+            <!-- Focus Mode Tab -->
+            <section id="focus" class="tab-panel">
+                <div id="focus-mode-controls"></div>
+            </section>
+
+            <!-- Settings Tab -->
+            <section id="settings" class="tab-panel">
+                <div id="settings-container"></div>  
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="popup.js"></script>
+</body>
+</html>
