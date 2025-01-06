@@ -1,0 +1,167 @@
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #4B5563;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Apply animations */
+.animate-slide-in {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Progress bar */
+.progress-bar {
+    height: 4px;
+    border-radius: 2px;
+    background-color: #E5E7EB;
+    overflow: hidden;
+}
+
+.dark .progress-bar {
+    background-color: #374151;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease-in-out;
+}
+
+/* Status indicators */
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-good {
+    background-color: #10B981;
+}
+
+.status-warning {
+    background-color: #F59E0B;
+}
+
+.status-danger {
+    background-color: #EF4444;
+}
+
+/* Hover effects */
+.hover-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Button animations */
+button {
+    transition: all 0.2s ease-in-out;
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+/* Chart container styles */
+.chart-container {
+    position: relative;
+    height: 220px; /* Slightly bigger height */
+    width: 100%;
+    margin: 0.5rem 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent; /* Ensure background is transparent */
+}
+
+/* Dark mode specific styles */
+.dark .chart-container {
+    background-color: transparent; /* Ensure background is transparent in dark mode */
+}
+
+/* Dark mode transitions */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Dark mode specific styles */
+.dark .chart-container {
+    background-color: #1f2937;
+}
+
+.dark .category-bar {
+    background-color: #374151;
+}
+
+.dark .category-name {
+    color: #9ca3af;
+}
+
+.dark .category-time {
+    color: #d1d5db;
+}
+
+/* Prevent text overflow */
+.category-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Add padding to the body */
+body {
+    padding: 1rem;
+}

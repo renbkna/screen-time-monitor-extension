@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Time Manager Settings</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="options.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-8">
+        <!-- Header -->
+        <div class="flex items-center mb-2">
+            <img src="../icons/icon48.png" alt="Logo" class="w-8 h-8 mr-3">
+            <h1 class="text-2xl font-semibold text-gray-900">Screen Time Manager Settings</h1>
+        </div>
+        <p class="text-gray-600 mb-8">Customize your screen time management experience</p>
+
+        <!-- Navigation -->
+        <nav class="flex space-x-8 mb-6" role="navigation" aria-label="Settings sections">
+            <button class="tab-button active" data-tab="generalTab" aria-pressed="true">General</button>
+            <button class="tab-button" data-tab="limitsTab" aria-pressed="false">Time Limits</button>
+            <button class="tab-button" data-tab="categoriesTab" aria-pressed="false">Categories</button>
+            <button class="tab-button" data-tab="notificationsTab" aria-pressed="false">Notifications</button>
+        </nav>
+
+        <!-- General Settings Tab -->
+        <div id="generalTab" class="settings-tab bg-white rounded-lg p-6 shadow-sm" role="tabpanel" aria-labelledby="generalTab">
+            <h2 class="text-xl font-semibold mb-6">General Settings</h2>
+            <div class="space-y-6">
+                <!-- Time Format -->
+                <div class="form-group">
+                    <label for="timeFormat" class="block text-sm font-medium text-gray-700">Time Format</label>
+                    <p class="text-sm text-gray-500 mb-2">Choose how time is displayed</p>
+                    <select id="timeFormat" name="timeFormat" class="form-select w-48" aria-describedby="timeFormatHelp">
+                        <option value="24-hour">24-hour</option>
+                        <option value="12-hour">12-hour</option>
+                    </select>
+                    <div id="timeFormatHelp" class="sr-only">Select your preferred time format</div>
+                </div>
+
+                <!-- Week Start -->
+                <div class="form-group">
+                    <label for="weekStart" class="block text-sm font-medium text-gray-700">Week Starts On</label>
+                    <p class="text-sm text-gray-500 mb-2">Set first day of the week</p>
+                    <select id="weekStart" name="weekStart" class="form-select w-48" aria-describedby="weekStartHelp">
+                        <option value="Monday">Monday</option>
+                        <option value="Sunday">Sunday</option>
+                    </select>
+                    <div id="weekStartHelp" class="sr-only">Select which day your week starts on</div>
+                </div>
+
+                <!-- Daily Goal -->
+                <div class="form-group">
+                    <label for="dailyGoal" class="block text-sm font-medium text-gray-700">Daily Productivity Goal</label>
+                    <p class="text-sm text-gray-500 mb-2">Target productive hours per day</p>
+                    <input type="number" id="dailyGoal" name="dailyGoal" 
+                           class="form-input w-48" min="1" max="24" 
+                           aria-describedby="dailyGoalHelp">
+                    <div id="dailyGoalHelp" class="sr-only">Enter your target productive hours per day, between 1 and 24</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Limits Tab -->
+        <div id="limitsTab" class="settings-tab hidden" role="tabpanel" aria-labelledby="limitsTab">
+            <h2 class="text-xl font-semibold mb-2">Time Limits</h2>
+            <p class="text-gray-600 mb-4">Set daily time limits for specific websites</p>
+            
+            <div id="limitsList" class="space-y-4" role="list" aria-label="Website time limits">
+                <!-- Time limits will be added here -->
+            </div>
+
+            <button id="addLimit" class="text-blue-600 hover:text-blue-700" aria-label="Add website limit">
+                + Add Website Limit
+            </button>
+        </div>
+
+        <!-- Categories Tab -->
+        <div id="categoriesTab" class="settings-tab hidden" role="tabpanel" aria-labelledby="categoriesTab">
+            <h2 class="text-xl font-semibold mb-2">Categories</h2>
+            <p class="text-gray-600 mb-4">Organize websites into categories</p>
+            
+            <div id="categoriesList" class="space-y-4" role="list" aria-label="Website categories">
+                <!-- Categories will be added here -->
+            </div>
+
+            <button id="addCategory" class="text-blue-600 hover:text-blue-700" aria-label="Add category">
+                + Add Category
+            </button>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div id="notificationsTab" class="settings-tab hidden" role="tabpanel" aria-labelledby="notificationsTab">
+            <h2 class="text-xl font-semibold mb-2">Notifications</h2>
+            
+            <div class="space-y-6">
+                <!-- Enable Notifications -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <label for="enableNotifications" class="text-sm font-medium text-gray-700">Enable Notifications</label>
+                        <p class="text-sm text-gray-500">Receive alerts about your screen time</p>
+                    </div>
+                    <div class="switch">
+                        <input type="checkbox" id="enableNotifications" name="enableNotifications" 
+                               aria-describedby="enableNotificationsHelp">
+                        <span class="slider round"></span>
+                    </div>
+                    <div id="enableNotificationsHelp" class="sr-only">Toggle to enable or disable notifications</div>
+                </div>
+
+                <!-- Break Reminders -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <label for="breakReminders" class="text-sm font-medium text-gray-700">Break Reminders</label>
+                        <p class="text-sm text-gray-500">Get reminded to take breaks</p>
+                    </div>
+                    <div class="switch">
+                        <input type="checkbox" id="breakReminders" name="breakReminders" 
+                               aria-describedby="breakRemindersHelp">
+                        <span class="slider round"></span>
+                    </div>
+                    <div id="breakRemindersHelp" class="sr-only">Toggle to enable or disable break reminders</div>
+                </div>
+
+                <!-- Break Interval -->
+                <div class="form-group">
+                    <label for="breakInterval" class="text-sm font-medium text-gray-700">Break Interval</label>
+                    <p class="text-sm text-gray-500 mb-2">Minutes between break reminders</p>
+                    <input type="number" id="breakInterval" name="breakInterval" 
+                           class="form-input w-48" min="15" max="120" step="15" 
+                           aria-describedby="breakIntervalHelp">
+                    <div id="breakIntervalHelp" class="sr-only">Set the interval between break reminders in minutes, from 15 to 120</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="mt-6 text-right">
+            <button id="saveSettings" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    aria-label="Save all settings">
+                Save Settings
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="options.js"></script>
+</body>
+</html>
