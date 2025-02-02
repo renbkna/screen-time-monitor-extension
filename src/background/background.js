@@ -7,29 +7,93 @@ chrome.alarms.create(ALARM_CHECK_LIMITS, {
   periodInMinutes: CHECK_INTERVAL
 });
 
-// Listen for alarm
-chrome.alarms.onAlarm.addListener((alarm) => {
+// Listen for alarm with error handling
+chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_CHECK_LIMITS) {
-    checkTimeLimits();
+    try {
+      await checkTimeLimits();
+    } catch (error) {
+      console.error('Alarm handler failed:', error);
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: '../icons/icon48.png',
+        title: 'System Error',
+        message: 'Failed to check time limits. Please reload the extension.'
+      });
+    }
   }
 });
 
 /**
  * Check time limits for all tracked websites
  */
+// Throttle storage operations to 1 per second
+const storageQueue = [];
+let isProcessing = false;
+
+async function processStorageQueue() {
+  if (isProcessing || !storageQueue.length) return;
+  isProcessing = true;
+  
+  try {
+    const operation = storageQueue.shift();
+    await operation();
+  } catch (error) {
+    console.error('Storage operation failed:', error);
+  } finally {
+    isProcessing = false;
+    processStorageQueue();
+  }
+}
+
+// Validate URL format
+function isValidURL(url) {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Sanitize input for notifications
+function sanitizeString(input) {
+  return input.replace(/</g, "<").replace(/>/g, ">");
+}
+
+// Convert minutes to seconds
+const MINUTES_TO_SECONDS = 60;
+const WARNING_THRESHOLD = 0.9;
+
 async function checkTimeLimits() {
   try {
-    const storage = await chrome.storage.local.get(['limits', 'timeData']);
+    // Throttled storage access
+    const storage = await new Promise((resolve, reject) => {
+      storageQueue.push(async () => {
+        try {
+          const result = await chrome.storage.local.get(['limits', 'timeData']);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      processStorageQueue();
+    });
     const limits = storage.limits || {};
     const timeData = storage.timeData || {};
     const today = new Date().toLocaleDateString();
     const startOfWeek = getStartOfWeek(new Date()).toLocaleDateString();
 
     // Get current tab
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!activeTab) return;
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      .catch(error => {
+        console.error('Tab query failed:', error);
+        return [null];
+      });
+    
+    if (!activeTab?.url || !isValidURL(activeTab.url)) return;
 
-    const domain = new URL(activeTab.url).hostname;
+    const domain = new URL(activeTab.url).hostname || '';
     const normalizedDomain = normalizeWebsite(domain);
     const limit = limits[normalizedDomain];
 
@@ -37,26 +101,27 @@ async function checkTimeLimits() {
 
     // Check daily limit
     const dailyUsage = getDailyUsage(timeData, normalizedDomain, today);
-    if (dailyUsage >= limit.dailyLimit * 60) { // Convert minutes to seconds
+    if (dailyUsage >= limit.dailyLimit * MINUTES_TO_SECONDS) {
       handleLimitExceeded(activeTab, 'daily', limit);
       return;
     }
 
     // Check weekly limit
     const weeklyUsage = getWeeklyUsage(timeData, normalizedDomain, startOfWeek);
-    if (weeklyUsage >= limit.weeklyLimit * 60) { // Convert minutes to seconds
+    if (weeklyUsage >= limit.weeklyLimit * MINUTES_TO_SECONDS) {
       handleLimitExceeded(activeTab, 'weekly', limit);
       return;
     }
 
     // If approaching limit (90%), show warning
-    const dailyThreshold = limit.dailyLimit * 60 * 0.9;
-    const weeklyThreshold = limit.weeklyLimit * 60 * 0.9;
+    const dailyThreshold = limit.dailyLimit * MINUTES_TO_SECONDS * WARNING_THRESHOLD;
+    const weeklyThreshold = limit.weeklyLimit * MINUTES_TO_SECONDS * WARNING_THRESHOLD;
 
+    const sanitizedDomain = sanitizeString(normalizedDomain);
     if (dailyUsage >= dailyThreshold) {
-      showLimitWarning(normalizedDomain, 'daily', limit.dailyLimit, dailyUsage);
+      showLimitWarning(sanitizedDomain, 'daily', limit.dailyLimit, dailyUsage);
     } else if (weeklyUsage >= weeklyThreshold) {
-      showLimitWarning(normalizedDomain, 'weekly', limit.weeklyLimit, weeklyUsage);
+      showLimitWarning(sanitizedDomain, 'weekly', limit.weeklyLimit, weeklyUsage);
     }
   } catch (error) {
     console.error('Error checking time limits:', error);
@@ -67,18 +132,29 @@ async function checkTimeLimits() {
  * Handle when a limit is exceeded
  */
 async function handleLimitExceeded(tab, type, limit) {
-  // Show notification
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: '../icons/icon48.png',
-    title: 'Time Limit Exceeded',
-    message: `You've exceeded your ${type} time limit for ${limit.website}`
-  });
+  try {
+    const sanitizedType = sanitizeString(type);
+    const sanitizedWebsite = sanitizeString(limit.website);
+    
+    // Show notification
+    await chrome.notifications.create({
+      type: 'basic',
+      iconUrl: '../icons/icon48.png',
+      title: 'Time Limit Exceeded',
+      message: `You've exceeded your ${sanitizedType} time limit for ${sanitizedWebsite}`
+    }).catch(error => console.error('Notification failed:', error));
 
-  // Redirect to blocked page
-  await chrome.tabs.update(tab.id, {
-    url: chrome.runtime.getURL(`/blocked.html?type=${type}&website=${limit.website}`)
-  });
+    // Redirect to blocked page
+    if (tab.id) {
+      await chrome.tabs.update(tab.id, {
+        url: chrome.runtime.getURL(
+          `/blocked.html?type=${encodeURIComponent(sanitizedType)}&website=${encodeURIComponent(sanitizedWebsite)}`
+        )
+      }).catch(error => console.error('Tab update failed:', error));
+    }
+  } catch (error) {
+    console.error('Limit exceeded handler failed:', error);
+  }
 }
 
 /**
