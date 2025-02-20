@@ -35,7 +35,7 @@ Screen Time Manager Plus is a modern, feature-rich browser extension designed to
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/renbkna/screen-time-monitor-extension.git
+    git clone https://github.com/renbkna/screen-time-monitor-extension
     ```
 
 2. Open Chrome and navigate to `chrome://extensions/`.
