@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2024-12-13
 
 ### Added
+
 - Initial release with core features:
   - Screen time tracking and analytics
   - Website blocking functionality
@@ -29,14 +30,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Security enhancements
 
 ### Changed
+
 - N/A (Initial release)
 
 ### Fixed
+
 - N/A (Initial release)
 
 ## [0.1.0] - 2024-12-13
 
 ### Added
+
 - Initial development setup
 - Basic project structure
 - Core functionality implementation
