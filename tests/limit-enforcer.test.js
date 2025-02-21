@@ -54,7 +54,9 @@ describe('LimitEnforcer', () => {
       const domain = extractDomain(testTab.url);
       const currentDate = new Date().toISOString().split('T')[0];
 
-      expect(limitEnforcer.timeTracker.daily[currentDate][domain]).toBeDefined();
+      expect(
+        limitEnforcer.timeTracker.daily[currentDate][domain]
+      ).toBeDefined();
     });
 
     it('should handle URL changes', async () => {
@@ -64,7 +66,9 @@ describe('LimitEnforcer', () => {
       const domain = extractDomain(testTab.url);
       const currentDate = new Date().toISOString().split('T')[0];
 
-      expect(limitEnforcer.timeTracker.daily[currentDate][domain]).toBeDefined();
+      expect(
+        limitEnforcer.timeTracker.daily[currentDate][domain]
+      ).toBeDefined();
     });
   });
 

@@ -20,7 +20,9 @@ const archive = archiver('zip', {
 output.on('close', () => {
   console.log(`\n📦 Extension packaged successfully!`);
   console.log(`📍 Location: dist/screen-time-monitor-${version}.zip`);
-  console.log(`📊 Total size: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB\n`);
+  console.log(
+    `📊 Total size: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB\n`
+  );
 });
 
 // Handle warnings during archiving

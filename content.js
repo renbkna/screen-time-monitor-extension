@@ -10,250 +10,258 @@ let isProcessingQueue = false;
 
 // Site-specific handlers
 const siteHandlers = {
-    'youtube.com': {
-        initialize: function() {
-            // YouTube specific initialization
-            if (typeof YT === 'undefined') {
-                const tag = document.createElement('script');
-                tag.src = "https://www.youtube.com/iframe_api";
-                const firstScriptTag = document.getElementsByTagName('script')[0];
-                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-            }
+  'youtube.com': {
+    initialize: function () {
+      // YouTube specific initialization
+      if (typeof YT === 'undefined') {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      }
 
-            // Create observer for video player changes
-            const observer = new MutationObserver((mutations) => {
-                const player = document.querySelector('#movie_player');
-                if (player) {
-                    handleYouTubeActivity();
-                }
-            });
-
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        },
-        cleanup: function() {
-            // YouTube specific cleanup
+      // Create observer for video player changes
+      const observer = new MutationObserver((mutations) => {
+        const player = document.querySelector('#movie_player');
+        if (player) {
+          handleYouTubeActivity();
         }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
     },
-    'pinterest.com': {
-        initialize: function() {
-            // Pinterest specific initialization
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                        handlePinterestActivity();
-                    }
-                });
-            });
-
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true
-            });
-        },
-        cleanup: function() {
-            // Pinterest specific cleanup
-        }
+    cleanup: function () {
+      // YouTube specific cleanup
     }
+  },
+  'pinterest.com': {
+    initialize: function () {
+      // Pinterest specific initialization
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            handlePinterestActivity();
+          }
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true
+      });
+    },
+    cleanup: function () {
+      // Pinterest specific cleanup
+    }
+  }
 };
 
 // Site-specific activity handlers
 function handleYouTubeActivity() {
-    const player = document.querySelector('#movie_player');
-    if (player && player.getPlayerState) {
-        const state = player.getPlayerState();
-        // Only count as activity if video is playing
-        if (state === 1) { // 1 = playing
-            updateActivity();
-        }
+  const player = document.querySelector('#movie_player');
+  if (player && player.getPlayerState) {
+    const state = player.getPlayerState();
+    // Only count as activity if video is playing
+    if (state === 1) {
+      // 1 = playing
+      updateActivity();
     }
+  }
 }
 
 function handlePinterestActivity() {
-    // Track Pinterest infinite scroll and modal interactions
-    updateActivity();
+  // Track Pinterest infinite scroll and modal interactions
+  updateActivity();
 }
 
 // Initialize content script
 function initialize() {
-    try {
-        if (!document || !document.body) {
-            setTimeout(initialize, 100);
-            return;
-        }
-
-        // Set up site-specific handlers
-        const hostname = window.location.hostname;
-        const domain = Object.keys(siteHandlers).find(site => hostname.includes(site));
-        if (domain) {
-            console.log(`Initializing handler for ${domain}`);
-            siteHandlers[domain].initialize();
-        }
-
-        setupActivityTracking();
-        injectCustomStyles();
-        sendTabInfo();
-        checkTimeLimits();
-        
-        console.log('Screen Time Manager content script initialized');
-    } catch (error) {
-        console.error('Initialization failed:', error);
-        if (retryCount < MAX_RETRIES) {
-            retryCount++;
-            setTimeout(initialize, 1000 * Math.pow(2, retryCount));
-        }
+  try {
+    if (!document || !document.body) {
+      setTimeout(initialize, 100);
+      return;
     }
+
+    // Set up site-specific handlers
+    const hostname = window.location.hostname;
+    const domain = Object.keys(siteHandlers).find((site) =>
+      hostname.includes(site)
+    );
+    if (domain) {
+      console.log(`Initializing handler for ${domain}`);
+      siteHandlers[domain].initialize();
+    }
+
+    setupActivityTracking();
+    injectCustomStyles();
+    sendTabInfo();
+    checkTimeLimits();
+
+    console.log('Screen Time Manager content script initialized');
+  } catch (error) {
+    console.error('Initialization failed:', error);
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      setTimeout(initialize, 1000 * Math.pow(2, retryCount));
+    }
+  }
 }
 
 // Set up activity tracking
 function setupActivityTracking() {
-    // Track more user activities with error handling
-    ['mousemove', 'keypress', 'scroll', 'click', 'touchstart'].forEach(event => {
-        try {
-            document.addEventListener(event, handleUserActivity, { passive: true });
-        } catch (error) {
-            console.warn(`Failed to add ${event} listener:`, error);
-        }
-    });
-    
-    // Track visibility changes
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+  // Track more user activities with error handling
+  ['mousemove', 'keypress', 'scroll', 'click', 'touchstart'].forEach(
+    (event) => {
+      try {
+        document.addEventListener(event, handleUserActivity, { passive: true });
+      } catch (error) {
+        console.warn(`Failed to add ${event} listener:`, error);
+      }
+    }
+  );
 
-    // Set up idle detection
-    startIdleDetection();
+  // Track visibility changes
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Periodic active check
-    setInterval(sendActiveStatus, 2000);
+  // Set up idle detection
+  startIdleDetection();
+
+  // Periodic active check
+  setInterval(sendActiveStatus, 2000);
 }
 
 // Handle user activity with debouncing
 let activityTimeout = null;
 function handleUserActivity() {
-    try {
-        lastActivity = Date.now();
-        if (activityTimeout) {
-            clearTimeout(activityTimeout);
-        }
-        
-        activityTimeout = setTimeout(async () => {
-            await sendMessageSafely({
-                action: 'updateActivity',
-                lastActivity: lastActivity
-            });
-        }, 500);
-    } catch (error) {
-        console.warn('Error handling user activity:', error);
+  try {
+    lastActivity = Date.now();
+    if (activityTimeout) {
+      clearTimeout(activityTimeout);
     }
+
+    activityTimeout = setTimeout(async () => {
+      await sendMessageSafely({
+        action: 'updateActivity',
+        lastActivity: lastActivity
+      });
+    }, 500);
+  } catch (error) {
+    console.warn('Error handling user activity:', error);
+  }
 }
 
 // Send active status periodically
 async function sendActiveStatus() {
-    if (!document.hidden) {
-        await sendMessageSafely({
-            action: 'updateActivity',
-            lastActivity: lastActivity
-        });
-    }
+  if (!document.hidden) {
+    await sendMessageSafely({
+      action: 'updateActivity',
+      lastActivity: lastActivity
+    });
+  }
 }
 
 // Handle visibility change
 function handleVisibilityChange() {
-    try {
-        if (document.hidden) {
-            sendMessageSafely({ action: 'pageHidden' });
-        } else {
-            sendMessageSafely({ action: 'pageVisible' });
-            handleUserActivity();
-        }
-    } catch (error) {
-        console.warn('Error handling visibility change:', error);
+  try {
+    if (document.hidden) {
+      sendMessageSafely({ action: 'pageHidden' });
+    } else {
+      sendMessageSafely({ action: 'pageVisible' });
+      handleUserActivity();
     }
+  } catch (error) {
+    console.warn('Error handling visibility change:', error);
+  }
 }
 
 // Start idle detection
 function startIdleDetection() {
-    try {
-        if (idleTimeout) {
-            clearTimeout(idleTimeout);
-        }
-        
-        idleTimeout = setTimeout(() => {
-            sendMessageSafely({ action: 'idle' });
-        }, 5 * 60 * 1000); // 5 minutes of inactivity
-    } catch (error) {
-        console.warn('Error starting idle detection:', error);
+  try {
+    if (idleTimeout) {
+      clearTimeout(idleTimeout);
     }
+
+    idleTimeout = setTimeout(
+      () => {
+        sendMessageSafely({ action: 'idle' });
+      },
+      5 * 60 * 1000
+    ); // 5 minutes of inactivity
+  } catch (error) {
+    console.warn('Error starting idle detection:', error);
+  }
 }
 
 // Safe message sender with queuing
 async function sendMessageSafely(message) {
-    try {
-        if (!chrome.runtime) {
-            console.warn('Chrome runtime not available');
-            return null;
-        }
-        return await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage(message, (response) => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    resolve(response);
-                }
-            });
-        });
-    } catch (error) {
-        console.warn(`Message sending failed: ${error.message}`);
-        return null;
+  try {
+    if (!chrome.runtime) {
+      console.warn('Chrome runtime not available');
+      return null;
     }
+    return await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+  } catch (error) {
+    console.warn(`Message sending failed: ${error.message}`);
+    return null;
+  }
 }
 
 // Check time limits periodically
 function checkTimeLimits() {
-    setInterval(async () => {
-        try {
-            if (!document.hidden) {
-                const response = await sendMessageSafely({ action: 'checkLimit' });
-                if (response?.isExceeded && !isLimitExceeded) {
-                    isLimitExceeded = true;
-                    showLimitExceededOverlay();
-                }
-            }
-        } catch (error) {
-            console.warn('Error checking time limit:', error);
+  setInterval(async () => {
+    try {
+      if (!document.hidden) {
+        const response = await sendMessageSafely({ action: 'checkLimit' });
+        if (response?.isExceeded && !isLimitExceeded) {
+          isLimitExceeded = true;
+          showLimitExceededOverlay();
         }
-    }, 2000); // Check every 2 seconds
+      }
+    } catch (error) {
+      console.warn('Error checking time limit:', error);
+    }
+  }, 2000); // Check every 2 seconds
 }
 
 // Get current tab info
 async function sendTabInfo() {
-    try {
-        const response = await sendMessageSafely({ action: 'getTabInfo' });
-        if (response?.domain) {
-            console.log('Current domain:', response.domain);
-            if (response.isLimitExceeded) {
-                showLimitExceededOverlay(response.domain);
-            }
-        }
-    } catch (error) {
-        console.error('Error getting tab info:', error);
+  try {
+    const response = await sendMessageSafely({ action: 'getTabInfo' });
+    if (response?.domain) {
+      console.log('Current domain:', response.domain);
+      if (response.isLimitExceeded) {
+        showLimitExceededOverlay(response.domain);
+      }
     }
+  } catch (error) {
+    console.error('Error getting tab info:', error);
+  }
 }
 
 // Show limit exceeded overlay
 function showLimitExceededOverlay(domain) {
-    try {
-        // Remove any existing overlay first
-        const existingOverlay = document.querySelector('.screen-time-overlay');
-        if (existingOverlay) {
-            existingOverlay.remove();
-        }
+  try {
+    // Remove any existing overlay first
+    const existingOverlay = document.querySelector('.screen-time-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
 
-        const overlay = document.createElement('div');
-        overlay.className = 'screen-time-overlay';
-        overlay.style.cssText = `
+    const overlay = document.createElement('div');
+    overlay.className = 'screen-time-overlay';
+    overlay.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -266,8 +274,8 @@ function showLimitExceededOverlay(domain) {
             justify-content: center;
         `;
 
-        const content = document.createElement('div');
-        content.style.cssText = `
+    const content = document.createElement('div');
+    content.style.cssText = `
             background: white;
             padding: 2rem;
             border-radius: 1rem;
@@ -277,7 +285,7 @@ function showLimitExceededOverlay(domain) {
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         `;
 
-        content.innerHTML = `
+    content.innerHTML = `
             <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;">
                 Time Limit Reached
             </h2>
@@ -309,60 +317,60 @@ function showLimitExceededOverlay(domain) {
             </div>
         `;
 
-        overlay.appendChild(content);
-        document.body.appendChild(overlay);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
 
-        // Add event listeners
-        const settingsButton = overlay.querySelector('#openSettings');
-        const closeButton = overlay.querySelector('#closeTab');
+    // Add event listeners
+    const settingsButton = overlay.querySelector('#openSettings');
+    const closeButton = overlay.querySelector('#closeTab');
 
-        if (settingsButton) {
-            settingsButton.addEventListener('click', () => {
-                sendMessageSafely({ action: 'openSettings' });
-            });
-        }
-
-        if (closeButton) {
-            closeButton.addEventListener('click', () => {
-                try {
-                    window.close();
-                } catch (error) {
-                    console.warn('Error closing tab:', error);
-                    // Fallback to navigation
-                    window.location.href = 'about:blank';
-                }
-            });
-        }
-
-        // Prevent background page interaction and escape key
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                e.stopPropagation();
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && isLimitExceeded) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        });
-    } catch (error) {
-        console.error('Error showing limit exceeded overlay:', error);
+    if (settingsButton) {
+      settingsButton.addEventListener('click', () => {
+        sendMessageSafely({ action: 'openSettings' });
+      });
     }
+
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        try {
+          window.close();
+        } catch (error) {
+          console.warn('Error closing tab:', error);
+          // Fallback to navigation
+          window.location.href = 'about:blank';
+        }
+      });
+    }
+
+    // Prevent background page interaction and escape key
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        e.stopPropagation();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isLimitExceeded) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+  } catch (error) {
+    console.error('Error showing limit exceeded overlay:', error);
+  }
 }
 
 // Inject custom styles
 function injectCustomStyles() {
-    try {
-        const existingStyle = document.getElementById('screen-time-styles');
-        if (existingStyle) {
-            return;
-        }
+  try {
+    const existingStyle = document.getElementById('screen-time-styles');
+    if (existingStyle) {
+      return;
+    }
 
-        const style = document.createElement('style');
-        style.id = 'screen-time-styles';
-        style.textContent = `
+    const style = document.createElement('style');
+    style.id = 'screen-time-styles';
+    style.textContent = `
             .screen-time-notification {
                 position: fixed;
                 bottom: 20px;
@@ -417,28 +425,28 @@ function injectCustomStyles() {
                 }
             }
         `;
-        document.head.appendChild(style);
-    } catch (error) {
-        console.error('Error injecting custom styles:', error);
-    }
+    document.head.appendChild(style);
+  } catch (error) {
+    console.error('Error injecting custom styles:', error);
+  }
 }
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
+  document.addEventListener('DOMContentLoaded', initialize);
 } else {
-    initialize();
+  initialize();
 }
 
 // Handle messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    try {
-        if (message?.action === 'limitExceeded') {
-            showLimitExceededOverlay(message.domain);
-            isLimitExceeded = true;
-        }
-    } catch (error) {
-        console.error('Error handling message:', error);
+  try {
+    if (message?.action === 'limitExceeded') {
+      showLimitExceededOverlay(message.domain);
+      isLimitExceeded = true;
     }
-    return true;
+  } catch (error) {
+    console.error('Error handling message:', error);
+  }
+  return true;
 });

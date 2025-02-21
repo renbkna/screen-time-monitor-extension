@@ -62,13 +62,13 @@ module.exports = {
     new CleanWebpackPlugin(),
     new CopyPlugin({
       patterns: [
-        { 
+        {
           from: 'src/manifest.json',
           transform: (content) => {
             const manifest = JSON.parse(content);
             // Remove development-specific permissions
             const prodPermissions = manifest.permissions.filter(
-              perm => !['debugger'].includes(perm)
+              (perm) => !['debugger'].includes(perm)
             );
             manifest.permissions = prodPermissions;
             return JSON.stringify(manifest, null, 2);
@@ -76,7 +76,7 @@ module.exports = {
         },
         { from: 'src/assets', to: 'assets' },
         { from: 'src/styles', to: 'styles' },
-        { 
+        {
           from: 'src/**/*.html',
           to: '[name][ext]',
           globOptions: {

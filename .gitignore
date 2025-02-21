@@ -1,6 +1,19 @@
+# Node modules
 node_modules/
+
+# Build output
 dist/
+build/
+
+# Coverage reports
 coverage/
+
+# OS-specific
 .DS_Store
+
+# Editor-specific
+.vscode/
+.idea/
+
+# Logs
 *.log
-.env

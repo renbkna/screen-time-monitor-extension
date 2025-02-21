@@ -16,7 +16,7 @@ document.body.innerHTML = `
 
 // Extend Jest with additional matchers
 expect.extend({
-  toBeValidDate: function(received) {
+  toBeValidDate: function (received) {
     const pass = received instanceof Date && !isNaN(received);
     return {
       pass,

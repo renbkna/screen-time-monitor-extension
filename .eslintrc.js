@@ -21,24 +21,24 @@ module.exports = {
     'no-debugger': 'error',
     'no-alert': 'error',
     'no-duplicate-imports': 'error',
-    
+
     // Code style
-    'indent': ['error', 2],
+    indent: ['error', 2],
     'linebreak-style': ['error', 'unix'],
-    'quotes': ['error', 'single', { allowTemplateLiterals: true }],
-    'semi': ['error', 'always'],
+    quotes: ['error', 'single', { allowTemplateLiterals: true }],
+    semi: ['error', 'always'],
     'comma-dangle': ['error', 'never'],
     'arrow-parens': ['error', 'always'],
-    
+
     // Best practices
-    'curly': 'error',
+    curly: 'error',
     'default-case': 'error',
-    'eqeqeq': 'error',
+    eqeqeq: 'error',
     'no-eval': 'error',
     'no-implied-eval': 'error',
     'no-return-await': 'error',
     'require-await': 'error',
-    
+
     // Jest rules
     'jest/expect-expect': 'error',
     'jest/no-disabled-tests': 'warn',

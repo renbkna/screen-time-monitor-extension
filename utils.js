@@ -1,106 +1,106 @@
 // Constants for storage keys
-export const WEBSITE_DATA_KEY = "websiteData";
-export const DAILY_LIMITS_KEY = "dailyLimits";
-export const CATEGORIES_KEY = "categories";
-export const SETTINGS_KEY = "settings";
-export const NOTIFICATION_STATE_KEY = "notificationSent";
+export const WEBSITE_DATA_KEY = 'websiteData';
+export const DAILY_LIMITS_KEY = 'dailyLimits';
+export const CATEGORIES_KEY = 'categories';
+export const SETTINGS_KEY = 'settings';
+export const NOTIFICATION_STATE_KEY = 'notificationSent';
 
 // Website categories with color codes and keywords for automatic categorization
 export const DEFAULT_CATEGORIES = {
   work: {
-    name: "Work",
-    color: "#4F46E5",
+    name: 'Work',
+    color: '#4F46E5',
     keywords: [
-      "docs.google",
-      "notion",
-      "slack",
-      "microsoft",
-      "office",
-      "linkedin",
-      "github",
-      "gitlab",
-      "atlassian",
-    ],
+      'docs.google',
+      'notion',
+      'slack',
+      'microsoft',
+      'office',
+      'linkedin',
+      'github',
+      'gitlab',
+      'atlassian'
+    ]
   },
   social: {
-    name: "Social Media",
-    color: "#EC4899",
+    name: 'Social Media',
+    color: '#EC4899',
     keywords: [
-      "facebook",
-      "twitter",
-      "instagram",
-      "reddit",
-      "tiktok",
-      "snapchat",
-      "whatsapp",
-      "telegram",
-      "discord",
-    ],
+      'facebook',
+      'twitter',
+      'instagram',
+      'reddit',
+      'tiktok',
+      'snapchat',
+      'whatsapp',
+      'telegram',
+      'discord'
+    ]
   },
   entertainment: {
-    name: "Entertainment",
-    color: "#F59E0B",
+    name: 'Entertainment',
+    color: '#F59E0B',
     keywords: [
-      "youtube",
-      "netflix",
-      "twitch",
-      "spotify",
-      "disney",
-      "hulu",
-      "prime.video",
-      "vimeo",
-      "tiktok",
-    ],
+      'youtube',
+      'netflix',
+      'twitch',
+      'spotify',
+      'disney',
+      'hulu',
+      'prime.video',
+      'vimeo',
+      'tiktok'
+    ]
   },
   productivity: {
-    name: "Productivity",
-    color: "#10B981",
+    name: 'Productivity',
+    color: '#10B981',
     keywords: [
-      "gmail",
-      "outlook",
-      "trello",
-      "asana",
-      "notion",
-      "evernote",
-      "calendar",
-      "drive.google",
-    ],
+      'gmail',
+      'outlook',
+      'trello',
+      'asana',
+      'notion',
+      'evernote',
+      'calendar',
+      'drive.google'
+    ]
   },
   education: {
-    name: "Education",
-    color: "#6366F1",
+    name: 'Education',
+    color: '#6366F1',
     keywords: [
-      "coursera",
-      "udemy",
-      "edx",
-      "khan",
-      "academy",
-      "educational",
-      "university",
-      "school",
-      "learning",
-      "study",
-    ],
+      'coursera',
+      'udemy',
+      'edx',
+      'khan',
+      'academy',
+      'educational',
+      'university',
+      'school',
+      'learning',
+      'study'
+    ]
   },
   shopping: {
-    name: "Shopping",
-    color: "#8B5CF6",
+    name: 'Shopping',
+    color: '#8B5CF6',
     keywords: [
-      "amazon",
-      "ebay",
-      "etsy",
-      "walmart",
-      "shopping",
-      "store",
-      "shop",
-      "buy",
-      "cart",
-    ],
+      'amazon',
+      'ebay',
+      'etsy',
+      'walmart',
+      'shopping',
+      'store',
+      'shop',
+      'buy',
+      'cart'
+    ]
   },
   uncategorized: {
-    name: "Uncategorized",
-    color: "#6B7280",
-  },
+    name: 'Uncategorized',
+    color: '#6B7280'
+  }
 };
 
 // Get domain from URL with improved normalization
@@ -109,12 +109,12 @@ export function getDomainFromUrl(url) {
     const parsedUrl = new URL(url);
     // Get the hostname and remove 'www.' prefix
     let hostname = parsedUrl.hostname.toLowerCase();
-    if (hostname.startsWith("www.")) {
+    if (hostname.startsWith('www.')) {
       hostname = hostname.slice(4);
     }
     return hostname;
   } catch (error) {
-    console.error("Error parsing URL:", error);
+    console.error('Error parsing URL:', error);
     return null;
   }
 }
@@ -122,7 +122,7 @@ export function getDomainFromUrl(url) {
 // Get today's date key in YYYY-MM-DD format
 export function getTodayKey() {
   const today = new Date();
-  return today.toISOString().split("T")[0];
+  return today.toISOString().split('T')[0];
 }
 
 // Format milliseconds to readable time
@@ -142,36 +142,36 @@ export function formatTime(ms) {
 
 // Guess the category of a domain based on keywords and common domains
 export function guessDomainCategory(domain) {
-  if (!domain) return "other";
+  if (!domain) return 'other';
 
   // Common domain mappings
   const domainCategories = {
-    "youtube.com": "entertainment",
-    "netflix.com": "entertainment",
-    "twitch.tv": "entertainment",
-    "spotify.com": "entertainment",
-    "facebook.com": "social",
-    "instagram.com": "social",
-    "twitter.com": "social",
-    "x.com": "social",
-    "linkedin.com": "social",
-    "github.com": "work",
-    "stackoverflow.com": "work",
-    "gitlab.com": "work",
-    "bitbucket.org": "work",
-    "google.com": "productivity",
-    "gmail.com": "productivity",
-    "docs.google.com": "productivity",
-    "drive.google.com": "productivity",
-    "calendar.google.com": "productivity",
-    "meet.google.com": "productivity",
-    "zoom.us": "productivity",
-    "coursera.org": "education",
-    "udemy.com": "education",
-    "edx.org": "education",
-    "amazon.com": "shopping",
-    "ebay.com": "shopping",
-    "walmart.com": "shopping",
+    'youtube.com': 'entertainment',
+    'netflix.com': 'entertainment',
+    'twitch.tv': 'entertainment',
+    'spotify.com': 'entertainment',
+    'facebook.com': 'social',
+    'instagram.com': 'social',
+    'twitter.com': 'social',
+    'x.com': 'social',
+    'linkedin.com': 'social',
+    'github.com': 'work',
+    'stackoverflow.com': 'work',
+    'gitlab.com': 'work',
+    'bitbucket.org': 'work',
+    'google.com': 'productivity',
+    'gmail.com': 'productivity',
+    'docs.google.com': 'productivity',
+    'drive.google.com': 'productivity',
+    'calendar.google.com': 'productivity',
+    'meet.google.com': 'productivity',
+    'zoom.us': 'productivity',
+    'coursera.org': 'education',
+    'udemy.com': 'education',
+    'edx.org': 'education',
+    'amazon.com': 'shopping',
+    'ebay.com': 'shopping',
+    'walmart.com': 'shopping'
   };
 
   // Normalize the domain
@@ -184,7 +184,7 @@ export function guessDomainCategory(domain) {
 
   // Check for subdomain matches (e.g., mail.google.com should match google.com)
   for (const [key, category] of Object.entries(domainCategories)) {
-    if (normalizedDomain === key || normalizedDomain.endsWith("." + key)) {
+    if (normalizedDomain === key || normalizedDomain.endsWith('.' + key)) {
       return category;
     }
   }
@@ -192,74 +192,74 @@ export function guessDomainCategory(domain) {
   // Keyword-based categorization
   const keywords = {
     entertainment: [
-      "video",
-      "movie",
-      "music",
-      "game",
-      "play",
-      "stream",
-      "tv",
-      "radio",
-      "podcast",
-      "entertainment",
+      'video',
+      'movie',
+      'music',
+      'game',
+      'play',
+      'stream',
+      'tv',
+      'radio',
+      'podcast',
+      'entertainment'
     ],
     social: [
-      "chat",
-      "social",
-      "community",
-      "forum",
-      "blog",
-      "message",
-      "connect",
-      "friends",
+      'chat',
+      'social',
+      'community',
+      'forum',
+      'blog',
+      'message',
+      'connect',
+      'friends'
     ],
     work: [
-      "jira",
-      "confluence",
-      "slack",
-      "teams",
-      "office",
-      "project",
-      "work",
-      "business",
-      "enterprise",
+      'jira',
+      'confluence',
+      'slack',
+      'teams',
+      'office',
+      'project',
+      'work',
+      'business',
+      'enterprise'
     ],
     productivity: [
-      "mail",
-      "calendar",
-      "task",
-      "note",
-      "doc",
-      "sheet",
-      "slide",
-      "meet",
-      "productivity",
+      'mail',
+      'calendar',
+      'task',
+      'note',
+      'doc',
+      'sheet',
+      'slide',
+      'meet',
+      'productivity'
     ],
     education: [
-      "learn",
-      "course",
-      "study",
-      "edu",
-      "school",
-      "university",
-      "college",
-      "academy",
-      "education",
+      'learn',
+      'course',
+      'study',
+      'edu',
+      'school',
+      'university',
+      'college',
+      'academy',
+      'education'
     ],
     shopping: [
-      "shop",
-      "store",
-      "buy",
-      "cart",
-      "checkout",
-      "market",
-      "price",
-      "shopping",
-      "commerce",
-    ],
+      'shop',
+      'store',
+      'buy',
+      'cart',
+      'checkout',
+      'market',
+      'price',
+      'shopping',
+      'commerce'
+    ]
   };
 
-  const domainParts = normalizedDomain.split(".");
+  const domainParts = normalizedDomain.split('.');
   for (const part of domainParts) {
     for (const [category, categoryKeywords] of Object.entries(keywords)) {
       if (categoryKeywords.some((keyword) => part.includes(keyword))) {
@@ -269,7 +269,7 @@ export function guessDomainCategory(domain) {
   }
 
   // Default to 'other' if no match found
-  return "other";
+  return 'other';
 }
 
 // Update time spent for a domain with improved category handling
@@ -288,7 +288,7 @@ export async function updateTimeSpent(domain, timeSpent) {
       const category = guessDomainCategory(domain);
       websiteData[todayKey][domain] = {
         timeSpent: 0,
-        category: category,
+        category: category
       };
     }
 
@@ -299,7 +299,7 @@ export async function updateTimeSpent(domain, timeSpent) {
     await setWebsiteData(websiteData);
     return websiteData[todayKey][domain];
   } catch (error) {
-    console.error("Error updating time spent:", error);
+    console.error('Error updating time spent:', error);
     return null;
   }
 }
@@ -307,11 +307,11 @@ export async function updateTimeSpent(domain, timeSpent) {
 // Show a notification with improved visibility
 export function showNotification(title, message) {
   chrome.notifications.create({
-    type: "basic",
-    iconUrl: "icons/icon48.png",
+    type: 'basic',
+    iconUrl: 'icons/icon48.png',
     title: title,
     message: message,
-    priority: 2,
+    priority: 2
   });
 }
 
@@ -321,7 +321,7 @@ export async function getWebsiteData() {
     const data = await chrome.storage.local.get([WEBSITE_DATA_KEY]);
     return data[WEBSITE_DATA_KEY] || {};
   } catch (error) {
-    console.error("Error getting website data:", error);
+    console.error('Error getting website data:', error);
     return {};
   }
 }
@@ -329,13 +329,13 @@ export async function getWebsiteData() {
 // Set website data in storage with validation
 export async function setWebsiteData(websiteData) {
   try {
-    if (!websiteData || typeof websiteData !== "object") {
-      throw new Error("Invalid website data format");
+    if (!websiteData || typeof websiteData !== 'object') {
+      throw new Error('Invalid website data format');
     }
     await chrome.storage.local.set({ [WEBSITE_DATA_KEY]: websiteData });
-    console.log("Website data saved successfully");
+    console.log('Website data saved successfully');
   } catch (error) {
-    console.error("Error setting website data:", error);
+    console.error('Error setting website data:', error);
     throw error;
   }
 }
@@ -346,7 +346,7 @@ export async function getCategories() {
     const data = await chrome.storage.local.get([CATEGORIES_KEY]);
     return data[CATEGORIES_KEY] || DEFAULT_CATEGORIES;
   } catch (error) {
-    console.error("Error getting categories:", error);
+    console.error('Error getting categories:', error);
     return DEFAULT_CATEGORIES;
   }
 }
@@ -354,13 +354,13 @@ export async function getCategories() {
 // Set categories in storage with validation
 export async function setCategories(categories) {
   try {
-    if (!categories || typeof categories !== "object") {
-      throw new Error("Invalid categories format");
+    if (!categories || typeof categories !== 'object') {
+      throw new Error('Invalid categories format');
     }
     await chrome.storage.local.set({ [CATEGORIES_KEY]: categories });
-    console.log("Categories saved successfully");
+    console.log('Categories saved successfully');
   } catch (error) {
-    console.error("Error setting categories:", error);
+    console.error('Error setting categories:', error);
     throw error;
   }
 }
@@ -374,13 +374,13 @@ export async function getDailyLimits() {
     // Normalize stored limits
     const normalizedLimits = {};
     for (const [domain, limit] of Object.entries(limits)) {
-      const normalizedDomain = domain.toLowerCase().replace(/^www\./, "");
+      const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
       normalizedLimits[normalizedDomain] = limit;
     }
 
     return normalizedLimits;
   } catch (error) {
-    console.error("Error getting daily limits:", error);
+    console.error('Error getting daily limits:', error);
     return {};
   }
 }
@@ -388,21 +388,21 @@ export async function getDailyLimits() {
 // Set daily limits in storage with validation
 export async function setDailyLimits(dailyLimits) {
   try {
-    if (!dailyLimits || typeof dailyLimits !== "object") {
-      throw new Error("Invalid daily limits format");
+    if (!dailyLimits || typeof dailyLimits !== 'object') {
+      throw new Error('Invalid daily limits format');
     }
 
     // Normalize all domains in the limits
     const normalizedLimits = {};
     for (const [domain, limit] of Object.entries(dailyLimits)) {
-      const normalizedDomain = domain.toLowerCase().replace(/^www\./, "");
+      const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
       normalizedLimits[normalizedDomain] = limit;
     }
 
     await chrome.storage.local.set({ [DAILY_LIMITS_KEY]: normalizedLimits });
-    console.log("Updated time limits:", normalizedLimits);
+    console.log('Updated time limits:', normalizedLimits);
   } catch (error) {
-    console.error("Error setting daily limits:", error);
+    console.error('Error setting daily limits:', error);
     throw error;
   }
 }
@@ -416,7 +416,7 @@ async function loadNotificationState() {
     const data = await chrome.storage.local.get([NOTIFICATION_STATE_KEY]);
     notificationSent = data[NOTIFICATION_STATE_KEY] || {};
   } catch (error) {
-    console.error("Error loading notification state:", error);
+    console.error('Error loading notification state:', error);
   }
 }
 
@@ -424,17 +424,17 @@ async function loadNotificationState() {
 async function saveNotificationState() {
   try {
     await chrome.storage.local.set({
-      [NOTIFICATION_STATE_KEY]: notificationSent,
+      [NOTIFICATION_STATE_KEY]: notificationSent
     });
   } catch (error) {
-    console.error("Error saving notification state:", error);
+    console.error('Error saving notification state:', error);
   }
 }
 
 // Check if time limit is exceeded for a domain
 export async function checkLimits(domain) {
   try {
-    const normalizedDomain = domain.toLowerCase().replace(/^www\./, "");
+    const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
     const todayKey = getTodayKey();
     const dailyLimits = await getDailyLimits();
     const websiteData = await getWebsiteData();
@@ -450,7 +450,7 @@ export async function checkLimits(domain) {
 
       if (timeSpent >= limitMs) {
         showNotification(
-          "Time Limit Exceeded",
+          'Time Limit Exceeded',
           `You've reached your daily limit for ${domain}.`
         );
         return true;
@@ -458,7 +458,7 @@ export async function checkLimits(domain) {
         // Only send the 90% notification if it hasn't been sent yet
         if (!notificationSent[normalizedDomain]) {
           showNotification(
-            "Time Limit Warning",
+            'Time Limit Warning',
             `You've used 90% of your daily limit for ${domain}.`
           );
           notificationSent[normalizedDomain] = true; // Mark as sent
@@ -472,7 +472,7 @@ export async function checkLimits(domain) {
     }
     return false;
   } catch (error) {
-    console.error("Error checking limits:", error);
+    console.error('Error checking limits:', error);
     return false;
   }
 }
@@ -505,29 +505,32 @@ export async function initializeWebsiteData() {
     }
 
     if (needsUpdate) {
-      console.log("Initialized extension data");
+      console.log('Initialized extension data');
     }
   } catch (error) {
-    console.error("Error initializing website data:", error);
+    console.error('Error initializing website data:', error);
     throw error;
   }
 }
 
 // Get default settings
 function getDefaultSettings() {
+  const darkMode =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches;
   return {
     notificationsEnabled: true,
-    darkMode: window.matchMedia("(prefers-color-scheme: dark)").matches,
+    darkMode: darkMode,
     autoCategorizeDomains: true,
     showProductivityScore: true,
-    timeFormat: "24h",
-    weekStartsOn: "monday",
+    timeFormat: '24h',
+    weekStartsOn: 'monday',
     dailyGoal: 8 * 60, // 8 hours in minutes
     breakReminders: {
       enabled: true,
       interval: 60, // minutes
-      minTimeForReminder: 30, // minutes
-    },
+      minTimeForReminder: 30 // minutes
+    }
   };
 }
 
@@ -537,7 +540,7 @@ export async function getSettings() {
     const data = await chrome.storage.local.get([SETTINGS_KEY]);
     return data[SETTINGS_KEY] || getDefaultSettings();
   } catch (error) {
-    console.error("Error getting settings:", error);
+    console.error('Error getting settings:', error);
     return getDefaultSettings();
   }
 }
@@ -545,13 +548,13 @@ export async function getSettings() {
 // Set settings in storage
 export async function setSettings(settings) {
   try {
-    if (!settings || typeof settings !== "object") {
-      throw new Error("Invalid settings format");
+    if (!settings || typeof settings !== 'object') {
+      throw new Error('Invalid settings format');
     }
     await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
-    console.log("Settings saved successfully");
+    console.log('Settings saved successfully');
   } catch (error) {
-    console.error("Error setting settings:", error);
+    console.error('Error setting settings:', error);
     throw error;
   }
 }
@@ -570,7 +573,7 @@ export async function calculateProductivityScore() {
       uncategorized: 0.5, // 50% productive
       shopping: 0.3, // 30% productive
       social: 0.2, // 20% productive
-      entertainment: 0.1, // 10% productive
+      entertainment: 0.1 // 10% productive
     };
 
     let totalTime = 0;
@@ -593,13 +596,13 @@ export async function calculateProductivityScore() {
     const settings = await getSettings();
     await setSettings({
       ...settings,
-      productivityScore: score,
+      productivityScore: score
     });
 
-    console.log("Productivity score calculated:", score);
+    console.log('Productivity score calculated:', score);
     return score;
   } catch (error) {
-    console.error("Error calculating productivity score:", error);
+    console.error('Error calculating productivity score:', error);
     return 0;
   }
 }

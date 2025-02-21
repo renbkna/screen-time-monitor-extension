@@ -5,18 +5,18 @@ import {
   formatTime,
   getSettings,
   getCategories,
-  getDomainFromUrl,
-} from "../utils.js";
+  getDomainFromUrl
+} from '../utils.js';
 
 // Initialize popup
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     await initializePopup();
     setupEventListeners();
     setupDarkMode();
   } catch (error) {
-    console.error("Error in popup initialization:", error);
-    showError("Failed to initialize popup");
+    console.error('Error in popup initialization:', error);
+    showError('Failed to initialize popup');
   }
 });
 
@@ -27,29 +27,29 @@ async function initializePopup() {
   try {
     await Promise.all([updateCurrentSite(), updateTodaysSummary()]);
   } catch (error) {
-    console.error("Error initializing popup:", error);
-    showError("Failed to load data");
+    console.error('Error initializing popup:', error);
+    showError('Failed to load data');
   }
 }
 
 // Set up event listeners
 function setupEventListeners() {
   // Settings button
-  document.getElementById("settings-btn").addEventListener("click", () => {
+  document.getElementById('settings-btn').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
 
   // Dashboard button
-  document.getElementById("dashboard-btn").addEventListener("click", () => {
+  document.getElementById('dashboard-btn').addEventListener('click', () => {
     chrome.tabs.create({
-      url: chrome.runtime.getURL("dashboard/dashboard.html"),
+      url: chrome.runtime.getURL('dashboard/dashboard.html')
     });
   });
 
   // Limits button
-  document.getElementById("limits-btn").addEventListener("click", () => {
+  document.getElementById('limits-btn').addEventListener('click', () => {
     chrome.tabs.create({
-      url: chrome.runtime.getURL("options/options.html#limits"),
+      url: chrome.runtime.getURL('options/options.html#limits')
     });
   });
 }
@@ -61,7 +61,7 @@ async function updateCurrentSite() {
     if (tabs.length === 0) return;
 
     const currentTab = tabs[0];
-    if (!currentTab.url || !currentTab.url.startsWith("http")) return;
+    if (!currentTab.url || !currentTab.url.startsWith('http')) return;
 
     const domain = getDomainFromUrl(currentTab.url);
     if (!domain) return;
@@ -74,26 +74,26 @@ async function updateCurrentSite() {
     const limit = dailyLimits[domain];
 
     // Update site info
-    document.getElementById("site-domain").textContent = formatDomain(domain);
-    document.getElementById("site-time").textContent = formatTime(
+    document.getElementById('site-domain').textContent = formatDomain(domain);
+    document.getElementById('site-time').textContent = formatTime(
       todayData?.timeSpent || 0
     );
 
     // Update favicon
-    const favicon = document.getElementById("site-favicon");
+    const favicon = document.getElementById('site-favicon');
     if (currentTab.favIconUrl) {
       favicon.style.backgroundImage = `url(${currentTab.favIconUrl})`;
-      favicon.style.backgroundSize = "cover";
-      favicon.classList.remove("favicon-placeholder");
+      favicon.style.backgroundSize = 'cover';
+      favicon.classList.remove('favicon-placeholder');
     } else {
-      favicon.style.backgroundImage = "none";
-      favicon.classList.add("favicon-placeholder");
+      favicon.style.backgroundImage = 'none';
+      favicon.classList.add('favicon-placeholder');
     }
 
     // Update progress bar
     updateProgressBar(domain, todayData?.timeSpent || 0, limit);
   } catch (error) {
-    console.error("Error updating current site:", error);
+    console.error('Error updating current site:', error);
   }
 }
 
@@ -108,7 +108,7 @@ async function updateTodaysSummary() {
 
     // Calculate total time and most visited
     let totalTime = 0;
-    let mostVisited = { domain: "-", time: 0 };
+    let mostVisited = { domain: '-', time: 0 };
     const categoryTimes = {
       entertainment: 0,
       social: 0,
@@ -116,7 +116,7 @@ async function updateTodaysSummary() {
       education: 0,
       work: 0,
       shopping: 0,
-      other: 0,
+      other: 0
     };
 
     // Process website data
@@ -129,7 +129,7 @@ async function updateTodaysSummary() {
       }
 
       // Track time by category
-      const category = data.category || "other";
+      const category = data.category || 'other';
       if (categoryTimes.hasOwnProperty(category)) {
         categoryTimes[category] += timeSpent;
       } else {
@@ -137,45 +137,44 @@ async function updateTodaysSummary() {
       }
     });
 
-    console.log("Category times:", categoryTimes); // Debugging
+    console.log('Category times:', categoryTimes); // Debugging
 
     // Update basic stats
-    document.getElementById("total-time").textContent = formatTime(totalTime);
-    document.getElementById("most-visited").textContent = formatDomain(
+    document.getElementById('total-time').textContent = formatTime(totalTime);
+    document.getElementById('most-visited').textContent = formatDomain(
       mostVisited.domain
     );
 
     // Update productivity score
     const settings = await getSettings();
     const productivityScore = settings.productivityScore || 0;
-    console.log("Productivity score:", productivityScore); // Debugging
-    document.getElementById(
-      "productivity-score"
-    ).textContent = `${productivityScore}%`;
+    console.log('Productivity score:', productivityScore); // Debugging
+    document.getElementById('productivity-score').textContent =
+      `${productivityScore}%`;
 
     // Update productivity indicator
-    const indicator = document.getElementById("productivity-indicator");
-    indicator.className = "w-2 h-2 rounded-full";
+    const indicator = document.getElementById('productivity-indicator');
+    indicator.className = 'w-2 h-2 rounded-full';
     indicator.classList.add(
       productivityScore >= 70
-        ? "bg-green-500"
+        ? 'bg-green-500'
         : productivityScore >= 40
-        ? "bg-yellow-500"
-        : "bg-red-500"
+          ? 'bg-yellow-500'
+          : 'bg-red-500'
     );
 
     // Update time distribution chart
     updateTimeDistributionChart(categoryTimes);
   } catch (error) {
-    console.error("Error updating summary:", error);
-    showError("Failed to load data");
+    console.error('Error updating summary:', error);
+    showError('Failed to load data');
   } finally {
     hideLoading();
   }
 }
 
 async function updateTimeDistributionChart(categoryTimes) {
-  const chartContainer = document.getElementById("timeDistributionChart");
+  const chartContainer = document.getElementById('timeDistributionChart');
   if (!chartContainer) return;
 
   // Filter and sort categories
@@ -195,14 +194,14 @@ async function updateTimeDistributionChart(categoryTimes) {
   }
 
   // Create new chart with a slightly bigger canvas
-  const ctx = document.createElement("canvas");
+  const ctx = document.createElement('canvas');
   ctx.width = 220; // Slightly bigger width
   ctx.height = 220; // Slightly bigger height
-  chartContainer.innerHTML = "";
+  chartContainer.innerHTML = '';
   chartContainer.appendChild(ctx);
 
   timeDistributionChart = new Chart(ctx, {
-    type: "pie",
+    type: 'pie',
     data: {
       labels: chartData.map(
         ([category]) => category.charAt(0).toUpperCase() + category.slice(1)
@@ -211,15 +210,15 @@ async function updateTimeDistributionChart(categoryTimes) {
         {
           data: chartData.map(([_, time]) => time / (1000 * 60)), // Convert to minutes
           backgroundColor: [
-            "#F59E0B", // Entertainment
-            "#EC4899", // Social
-            "#10B981", // Productivity
-            "#6366F1", // Education
-            "#4F46E5", // Work
-            "#6B7280", // Other
-          ],
-        },
-      ],
+            '#F59E0B', // Entertainment
+            '#EC4899', // Social
+            '#10B981', // Productivity
+            '#6366F1', // Education
+            '#4F46E5', // Work
+            '#6B7280' // Other
+          ]
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -228,29 +227,29 @@ async function updateTimeDistributionChart(categoryTimes) {
         tooltip: {
           callbacks: {
             label: (context) => {
-              const label = context.label || "";
+              const label = context.label || '';
               const value = context.raw || 0;
               return `${label}: ${value}m`;
-            },
-          },
+            }
+          }
         },
         legend: {
-          position: "bottom",
+          position: 'bottom',
           labels: {
-            color: "#6B7280", // Legend text color
+            color: '#6B7280', // Legend text color
             font: {
-              size: 12, // Smaller legend font size
-            },
-          },
-        },
-      },
-    },
+              size: 12 // Smaller legend font size
+            }
+          }
+        }
+      }
+    }
   });
 }
 
 // Update progress bar for time limits
 function updateProgressBar(domain, timeSpent, limit) {
-  const progressContainer = document.getElementById("site-limit-progress");
+  const progressContainer = document.getElementById('site-limit-progress');
 
   if (!limit) {
     progressContainer.innerHTML = `
@@ -266,11 +265,11 @@ function updateProgressBar(domain, timeSpent, limit) {
 
   let colorClass;
   if (percentage >= 100) {
-    colorClass = "bg-red-500"; // Exceeded limit
+    colorClass = 'bg-red-500'; // Exceeded limit
   } else if (percentage >= 80) {
-    colorClass = "bg-yellow-500"; // Warning (close to limit)
+    colorClass = 'bg-yellow-500'; // Warning (close to limit)
   } else {
-    colorClass = "bg-green-500"; // Within limit
+    colorClass = 'bg-green-500'; // Within limit
   }
 
   progressContainer.innerHTML = `
@@ -290,55 +289,55 @@ function updateProgressBar(domain, timeSpent, limit) {
 
 // Show loading state
 function showLoading() {
-  const loading = document.createElement("div");
-  loading.className = "flex justify-center items-center h-20";
+  const loading = document.createElement('div');
+  loading.className = 'flex justify-center items-center h-20';
   loading.innerHTML = `
     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
   `;
-  document.getElementById("timeDistributionChart").appendChild(loading);
+  document.getElementById('timeDistributionChart').appendChild(loading);
 }
 
 // Hide loading state
 function hideLoading() {
   const loading = document.querySelector(
-    "#timeDistributionChart .animate-spin"
+    '#timeDistributionChart .animate-spin'
   );
   if (loading) loading.remove();
 }
 
 // Setup dark mode
 function setupDarkMode() {
-  if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    document.documentElement.classList.add("dark");
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.documentElement.classList.add('dark');
   }
 
   window
-    .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", (e) => {
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', (e) => {
       if (e.matches) {
-        document.documentElement.classList.add("dark");
+        document.documentElement.classList.add('dark');
       } else {
-        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.remove('dark');
       }
     });
 }
 
 // Helper function to format domain
 function formatDomain(domain) {
-  if (!domain) return "-";
-  return domain.replace(/^www\./, "");
+  if (!domain) return '-';
+  return domain.replace(/^www\./, '');
 }
 
 // Show error message
 function showError(message) {
-  const toast = document.createElement("div");
+  const toast = document.createElement('div');
   toast.className =
-    "fixed bottom-4 left-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-center animate-fade-in";
+    'fixed bottom-4 left-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-center animate-fade-in';
   toast.textContent = message;
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    toast.classList.add("animate-fade-out");
+    toast.classList.add('animate-fade-out');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }

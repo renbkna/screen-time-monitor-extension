@@ -1,65 +1,72 @@
 /* Chart styles */
 .chart-container {
-    position: relative;
-    height: 300px;
-    width: 100%;
+  position: relative;
+  height: 300px;
+  width: 100%;
 }
 
 /* Active button state */
 .active-time-range {
-    background-color: #EBF5FF;
-    color: #2563EB;
+  background-color: #ebf5ff;
+  color: #2563eb;
 }
 
 /* SVG text styles */
 text {
-    font-family: system-ui, -apple-system, sans-serif;
-    fill: #666;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  fill: #666;
 }
 
 /* Tooltip styles */
 #chart-tooltip {
-    pointer-events: none;
-    position: fixed;
-    z-index: 1000;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    border-radius: 4px;
-    font-size: 14px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  position: fixed;
+  z-index: 1000;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Chart hover effects */
-svg rect:hover, svg path:hover {
-    opacity: 0.8;
-    transition: opacity 0.2s ease-in-out;
-    cursor: pointer;
+svg rect:hover,
+svg path:hover {
+  opacity: 0.8;
+  transition: opacity 0.2s ease-in-out;
+  cursor: pointer;
 }
 
 /* Chart wrapper height */
 .chart-wrapper {
-    height: 300px;
+  height: 300px;
 }
 
 /* Dark mode transitions */
 * {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 /* Dark mode specific styles */
 .dark .chart-container {
-    background-color: #1f2937;
+  background-color: #1f2937;
 }
 
 .dark .category-bar {
-    background-color: #374151;
+  background-color: #374151;
 }
 
 .dark .category-name {
-    color: #9ca3af;
+  color: #9ca3af;
 }
 
 .dark .category-time {
-    color: #d1d5db;
+  color: #d1d5db;
 }

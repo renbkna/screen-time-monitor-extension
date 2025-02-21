@@ -34,9 +34,9 @@ Screen Time Manager Plus is a modern, feature-rich browser extension designed to
 
 1. Clone the repository:
 
-    ```bash
-    git clone https://github.com/renbkna/screen-time-monitor-extension
-    ```
+   ```bash
+   git clone https://github.com/renbkna/screen-time-monitor-extension
+   ```
 
 2. Open Chrome and navigate to `chrome://extensions/`.
 3. Enable **Developer mode** in the top right.
@@ -76,23 +76,23 @@ Screen Time Manager Plus is a modern, feature-rich browser extension designed to
 ## Contributing
 
 1. Fork the repository.
-2. Create your feature branch:  
+2. Create your feature branch:
 
-    ```bash
-    git checkout -b feature/YourFeature
-    ```
+   ```bash
+   git checkout -b feature/YourFeature
+   ```
 
-3. Commit your changes:  
+3. Commit your changes:
 
-    ```bash
-    git commit -m 'Add some amazing feature'
-    ```
+   ```bash
+   git commit -m 'Add some amazing feature'
+   ```
 
-4. Push to the branch:  
+4. Push to the branch:
 
-    ```bash
-    git push origin feature/YourFeature
-    ```
+   ```bash
+   git push origin feature/YourFeature
+   ```
 
 5. Open a Pull Request with a clear description of your changes.
 
